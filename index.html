@@ -448,6 +448,36 @@ label.field textarea{min-height:86px;resize:vertical;line-height:1.5}
 .verdict.maybe{--vc:var(--st-awaiting);background:#FBF5E8}
 .verdict.yes{--vc:var(--st-confirmed);background:#EEF5F0}
 
+/* walkthrough */
+.rcat .owner{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid var(--rule);color:var(--ink-60);margin-left:4px;vertical-align:middle}
+.walk .wintro{font-size:12.5px;color:var(--ink-60);margin:0 0 10px;line-height:1.45}
+.walk .wsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}
+.walk .wsum div{border:1px solid var(--rule);border-radius:8px;padding:7px 8px;font-size:11.5px;color:var(--ink-60);line-height:1.3}
+.walk .wsum b{display:block;font-family:var(--mono);font-size:15px;color:var(--ink)}
+.wstep{border:1px solid var(--rule);border-left:4px solid var(--indigo);border-radius:8px;margin-bottom:8px;background:var(--card)}
+.wstep.done{border-left-color:var(--st-confirmed)}
+.wstep > button.wh{all:unset;box-sizing:border-box;cursor:pointer;display:flex;width:100%;align-items:center;gap:10px;padding:11px 12px}
+.wstep .wn{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--indigo);flex:none;width:18px}
+.wstep.done .wn{color:var(--st-confirmed)}
+.wstep .wt{flex:1;font-weight:600;font-size:14.5px}
+.wstep .wt small{font-weight:500;color:var(--ink-35);font-family:var(--mono);font-size:11px;margin-left:6px}
+.wstep .wprog{font-family:var(--mono);font-size:11px;color:var(--ink-35)}
+.wstep .wb{display:none;padding:0 12px 12px}
+.wstep.open .wb{display:block}
+.wstep .wdo{font-size:13px;line-height:1.5;margin:0 0 8px;padding-left:18px}
+.wstep .wdo li{margin-bottom:3px}
+.wstep h6{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-35);margin:12px 0 4px}
+.wread{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed var(--rule);font-size:13px}
+.wread:first-of-type{border-top:none}
+.wread .lbl{flex:1;line-height:1.3}
+.wread .lbl small{display:block;color:var(--ink-35);font-size:11px}
+.wread input{width:74px;font-family:var(--mono);font-size:14px;padding:6px 7px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink);text-align:right}
+.wread .u{font-family:var(--mono);font-size:11px;color:var(--ink-35);width:34px}
+.wbadge{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:3px 6px;border-radius:4px;width:40px;text-align:center;flex:none;color:#fff}
+.wbadge.ok{background:var(--st-confirmed)} .wbadge.flag{background:var(--st-awaiting)} .wbadge.fail{background:var(--shu)} .wbadge.none{background:transparent;color:var(--ink-35);border:1px dashed var(--rule)}
+.walk .rsub{padding:8px 0}
+.walk .rsub .lbl{font-size:13.5px}
+.wnext{margin-top:10px}
 /* triage */
 .triage{display:grid;gap:12px}
 .tcat{border:1px solid var(--rule);border-left:4px solid var(--shu);background:var(--card);border-radius:2px;padding:10px 12px}
@@ -515,6 +545,17 @@ label.field textarea{min-height:86px;resize:vertical;line-height:1.5}
 .gintro p{margin:0 0 8px;font-size:13px}
 .gorder{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
 .gorder li{margin-bottom:3px}
+.gtools h3{font-family:var(--display);font-size:15px;margin:0 0 4px}
+.gtools .sub{font-size:12.5px;color:var(--ink-60);margin:0 0 10px;line-height:1.45}
+.gtools h4{font-size:13px;margin:12px 0 4px;color:var(--shu)}
+.gtools .roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 4px}
+.gtools .roles div{border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.45}
+.gtools .roles b{display:block;font-size:13px;margin-bottom:2px}
+.gthr{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+.gthr th,.gthr td{text-align:left;padding:6px 6px;border-top:1px dashed var(--rule);vertical-align:top}
+.gthr th{font-weight:600;color:var(--ink-60);font-size:11.5px;border-top:none}
+.gthr .ok{color:var(--st-confirmed)} .gthr .fl{color:var(--st-awaiting)} .gthr .fa{color:var(--shu);font-weight:600}
+@media (max-width:520px){.gtools .roles{grid-template-columns:1fr}}
 .gcat{border-left:4px solid var(--shu)}
 .gcat h3{font-family:var(--display);font-size:15px;margin:0 0 6px;display:flex;justify-content:space-between}
 .gcat h3 .jp{color:var(--ink-35);font-weight:500;font-size:13px}
@@ -800,17 +841,13 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
 </head>
 <body>
 
-<div class="gate" id="gate">
+<div class="gate" id="gate" style="display:none">
   <div class="box">
     <h1>Akiya Trip Board</h1>
     <div id="gateSetup" class="setup" hidden></div>
     <div id="gateLogin">
-      <label class="field"><span>Email</span><input id="gEmail" type="email" autocomplete="username"></label>
-      <div style="height:10px"></div>
-      <label class="field"><span>Password</span><input id="gPass" type="password" autocomplete="current-password"></label>
       <div class="err" id="gErr"></div>
-      <button class="btn" id="gBtn" style="width:100%;padding:12px">Sign in</button>
-      <p class="hint" style="margin:12px 0 0">Two accounts, one board. You'll only see this once per phone — sign in here and it stays signed in from then on. Everything either of you changes shows up on the other phone within a second or two, and it keeps working offline.</p>
+      <button class="btn" id="gBtn" style="width:100%;padding:12px">Try again</button>
     </div>
   </div>
 </div>
@@ -835,7 +872,7 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
     <button id="btnSettings">Settings &amp; weights</button>
     <button id="btnExport">Export backup</button>
     <button id="btnImport">Import backup</button>
-    <button id="btnOut">Sign out</button>
+    <button id="btnOut">This phone: Dan</button>
   </div>
 </div>
 
@@ -908,7 +945,7 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
   <div class="gridhead"><h2>10-minute triage</h2><button class="btn ghost sm" onclick="window.print()">Print</button></div>
   <div class="guide">
     <div class="gcard gintro">
-      <p><b>Rule:</b> one FAIL in any red box = hard no. Thank the agent, photograph the reason, move on. Cosmetic damage is ignored entirely. Kit: bright torch, flat screwdriver or awl, small spirit level or a marble, phone.</p>
+      <p><b>Rule:</b> one FAIL in any red box = hard no. Thank the agent, photograph the reason, move on. Cosmetic damage is ignored entirely. Kit: bright torch, flat screwdriver or awl, small spirit level or a marble, phone, digital measure, moisture meter.</p>
       <ol class="gorder">
         <li><b>From the road (2 min)</b> — sight the ridge line end-to-end; walk the exterior foundation; look at where downpipes discharge.</li>
         <li><b>Genkan (1 min)</b> — smell test as you enter; try every sliding door and the front door.</li>
@@ -977,7 +1014,7 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
    Firebase Auth (email/password) + Firestore, offline cache on.
    ============================================================ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, deleteDoc, getDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ▼▼▼ PASTE YOUR FIREBASE WEB CONFIG HERE (Project settings → Your apps → SDK setup) ▼▼▼ */
@@ -1089,6 +1126,7 @@ const RATING = [
     {k:'r_appeal',label:'Guest appeal (views, onsen, ski)',w:2,d:['None','Low','Some','Good','Strong']},
     {k:'r_demand',label:'Rental demand in the area',w:1,d:['None','Low','Some','Good','Strong']}]}
 ];
+const CAT_OWNER = {structure:'Dan',services:'Dan',cosmetic:'Dan',location:'Cas',hazard:'Cas',land:'Cas',rental:'Cas'};
 const CAT_COLORS = {structure:'var(--shu)',services:'var(--indigo)',location:'var(--pf-nagano)',hazard:'var(--pf-gunma)',land:'var(--pf-saitama)',cosmetic:'var(--pf-yamanashi)',rental:'var(--pf-niigata)'};
 
 const TRIP_DAYS = [
@@ -1146,7 +1184,7 @@ function seedData(){
   ];
   return {agents,properties};
 }
-function blankReport(){ return {verdict:'',triage:{},cond:0,agentPresent:'',timeOn:'',followUp:'',inspectedAt:'',notes:''}; }
+function blankReport(){ return {verdict:'',triage:{},cond:0,agentPresent:'',timeOn:'',followUp:'',inspectedAt:'',notes:'',readings:{}}; }
 function defaultWeights(){ const w={}; RATING.forEach(c=>w[c.key]=c.w); return w; }
 
 /* ---------------- live state (mirrors of Firestore) ---------------- */
@@ -1480,6 +1518,7 @@ function drawDrawer(){
       <div class="tags">${(p.tags||[]).map(t=>`<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join('')}</div>
     </div>
     <div class="sec"><h4>Notes</h4><div class="notes">${p.notes?esc(p.notes):'<span class="hint">No notes yet.</span>'}</div></div>
+    ${walkHTML(p)}
     ${ratingHTML(p,sc)}
     ${reportHTML(p)}
     <div class="sec"><h4>Due diligence — ${done}/${total}</h4>
@@ -1491,7 +1530,7 @@ function drawDrawer(){
     <button class="btn danger" onclick="removeProperty('${p.id}')">Delete</button>
     <div style="display:flex;gap:8px">${typeof p.lat==='number'?`<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">Directions ↗</a>`:''}<button class="btn" onclick="editProperty('${p.id}')">Edit</button></div>
   </div>`;
-  wireRating(); wireReport();
+  wireWalk(); wireRating(); wireReport();
   $$('#drawer input[data-check]').forEach(cb=>cb.addEventListener('change',()=>{ const pr=props[openPropId]; pr.checks=pr.checks||{}; pr.checks[cb.dataset.check]=cb.checked; putProp(pr); }));
 }
 $('#drawer').addEventListener('focusout',()=>{ if(drawerDirty){ drawerDirty=false; setTimeout(redrawDrawerSafe,50); } });
@@ -1500,12 +1539,99 @@ window.slide=slide;
 function removeProperty(id){ if(!confirm('Delete this property for both of you? This cannot be undone.')) return; delProp(id); closeDrawer(); toast('Property deleted.'); }
 window.removeProperty=removeProperty;
 
+
+/* ---------------- inspection walkthrough ----------------
+   One lap per house. Each stop: what to do with the tools, readings to log, then the triage + rating items to score right there. */
+const READ_LIMITS = {
+  slope:{u:'mm/m',t:v=>v>6?'fail':v>=3?'flag':'ok'},
+  moist:{u:'%',t:v=>v>=20?'fail':v>=15?'flag':'ok'},
+  ceil:{u:'mm',t:v=>v>20?'fail':v>10?'flag':'ok'},
+  front:{u:'m',t:v=>v<2?'fail':v<2.2?'flag':'ok'}
+};
+const WALK = [
+  {id:'w1',name:'At the car',time:'1 min',
+    do:['Moisture meter on, set to wood mode. Level and digital measure switched on.','Phone camera ready for any FAIL or FLAG.'],
+    reads:[],tri:[],rate:[]},
+  {id:'w2',name:'Outside lap',time:'3 min',
+    do:['Sight the ridge line end to end from the road.','Digital measure the road frontage where the lot meets the road (needs 2 m or more).','Level on the top of the foundation at two corners.','Moisture meter on the bottom 150 mm of cladding and sill at every downpipe outlet and on the shady north side.','Look for mud tubes on the foundation.'],
+    reads:[['front','front','Road frontage','Lot edge to lot edge along the road'],['o_found','slope','Foundation level, worst corner',''],['o_moist','moist','Outside sill / cladding, worst','Judge against the inside baseline after rain']],
+    tri:['r1','r2','f1','f2','p1'],rate:['s_roof']},
+  {id:'w3',name:'Genkan',time:'1 min',
+    do:['Baseline moisture reading on dry timber high up an inside door frame. This is the "dry" number for this house.','Level across the step and door threshold.','Smell test. Try the front door and the first sliding doors.'],
+    reads:[['base','moist','Baseline (dry timber)','Everything else is compared to this'],['g_moist','moist','Base of door frame','']],
+    tri:['r4','m4'],rate:[]},
+  {id:'w4',name:'Each main room',time:'1 min per room',
+    do:['Level on the floor in the centre, both directions. Log the worst room.','Level against one post for plumb, including the main post.','Digital measure floor to ceiling in the centre, then in a corner. Log the biggest difference.','Look up for ceiling stains. Check the power board while passing.'],
+    reads:[['r_floor','slope','Floor slope, worst room',''],['r_post','slope','Post out of plumb, worst',''],['r_ceil','ceil','Ceiling centre vs corner, worst','Centre lower than corners = sag']],
+    tri:['f3','r3','m1'],rate:['c_paint','c_floor','c_mould','v_elec']},
+  {id:'w5',name:'Wet areas',time:'3 min',
+    do:['Moisture at the base of walls, around the toilet base, inside the sink cabinet floor and the bottom of the bathroom door frame.','Level on the floor at the bath doorway and in front of the sink. Stand on it and feel for spring.','Check toilet type, hot water unit and water pressure.'],
+    reads:[['w_moist','moist','Wet areas, worst reading',''],['w_floor','slope','Wet area floor slope','']],
+    tri:['m3'],rate:['v_sewer','v_water','v_plumb','c_kitchen']},
+  {id:'w6',name:'Under the floor',time:'3 min',
+    do:['Hatch is usually in the kitchen or wash-room floor.','Moisture meter pins straight into the sill and the bottom of 3 to 4 posts.','Torch and screwdriver on the same spots. Knock for hollow sounds.','Torch across the ground for standing water and check the vents.'],
+    reads:[['u_moist','moist','Sill / post base, worst','Wet and soft = walk away']],
+    tri:['f4','m2','p2'],rate:['s_found','s_frame','s_pest']},
+  {id:'w7',name:'Roof space',time:'1 min, if quick',
+    do:['Push up a closet ceiling panel. Torch for daylight, stains and sag.','Moisture on any stained board or rafter you can reach.'],
+    reads:[['k_moist','moist','Roof timber, worst','']],
+    tri:['p3'],rate:[]},
+  {id:'w8',name:'Before the car',time:'1 min',
+    do:['Check the numbers above, add the verdict and photos in the site report below.','Ask the agent the build year and whether there is a termite treatment record while they are still there.'],
+    reads:[],tri:[],rate:[]}
+];
+const walkOpen={};
+const RSUB={}; RATING.forEach(c=>c.subs.forEach(s=>RSUB[s.k]=s));
+const TRI={}; TRIAGE.forEach(c=>c.items.forEach(([k,l,h])=>TRI[k]=[l,h]));
+function readState(key,type,val){ if(val===''||val==null||isNaN(Number(val))) return 'none'; return READ_LIMITS[type].t(Number(val)); }
+function walkWorst(rd,keys,type){ const v=keys.map(k=>rd[k]).filter(x=>x!==''&&x!=null&&!isNaN(Number(x))).map(Number); if(!v.length) return null; return type==='front'?Math.min(...v):Math.max(...v); }
+function stepProgress(p,st){
+  const r=p.report||{}, rd=r.readings||{}, rt=p.rating||{}, tr=r.triage||{};
+  const total=st.reads.length+st.tri.length+st.rate.length;
+  const done=st.reads.filter(([k])=>rd[k]!==''&&rd[k]!=null).length+st.tri.filter(k=>tr[k]).length+st.rate.filter(k=>rt[k]).length;
+  return {done,total};
+}
+function walkHTML(p){
+  const r=p.report||blankReport(), rd=r.readings||{}, rt=p.rating||{}, tr=r.triage||{};
+  const open=walkOpen[p.id]||(walkOpen[p.id]={w1:true});
+  const ws=walkWorst(rd,['o_found','r_floor','r_post','w_floor'],'slope'), wm=walkWorst(rd,['o_moist','g_moist','w_moist','u_moist','k_moist'],'moist'), wc=walkWorst(rd,['r_ceil'],'ceil');
+  const sumBox=(label,v,type)=>{ const s=v==null?'none':READ_LIMITS[type].t(v); return `<div>${label}<b style="color:${s==='fail'?'var(--shu)':s==='flag'?'var(--st-awaiting)':s==='ok'?'var(--st-confirmed)':'var(--ink-35)'}">${v==null?'—':v+' '+READ_LIMITS[type].u}</b></div>`; };
+  return `<div class="sec walk" id="walkSec"><h4>Building inspection — Dan</h4>
+    <p class="wintro">Dan: building inspection. One lap, about 15 min, same order every house, with the level, digital measure and moisture meter. Log the number, mark the triage, score the building items, move to the next stop. Cas: rate location, land, hazards and rentability in the Rating section below.</p>
+    <div class="wsum">${sumBox('Worst slope',ws,'slope')}${sumBox('Worst moisture',wm,'moist')}${sumBox('Ceiling sag',wc,'ceil')}</div>
+    ${WALK.map((st,i)=>{ const pr=stepProgress(p,st), isOpen=!!open[st.id], done=pr.total&&pr.done===pr.total;
+      return `<div class="wstep${isOpen?' open':''}${done?' done':''}">
+      <button class="wh" data-wtoggle="${st.id}"><span class="wn">${done?'✓':i+1}</span><span class="wt">${esc(st.name)}<small>${esc(st.time)}</small></span><span class="wprog">${pr.total?pr.done+'/'+pr.total:''}</span></button>
+      <div class="wb">
+        <ul class="wdo">${st.do.map(d=>`<li>${esc(d)}</li>`).join('')}</ul>
+        ${st.reads.length?`<h6>Readings</h6>${st.reads.map(([k,type,label,hint])=>{ const v=rd[k]??''; const s=readState(k,type,v); return `<div class="wread"><div class="lbl">${esc(label)}${hint?`<small>${esc(hint)}</small>`:''}</div><input inputmode="decimal" data-rd="${k}" data-rt="${type}" value="${esc(String(v))}" placeholder="—"><span class="u">${READ_LIMITS[type].u}</span><span class="wbadge ${s}" data-badge="${k}">${s==='none'?'—':s.toUpperCase()}</span></div>`; }).join('')}`:''}
+        ${st.tri.length?`<h6>Triage</h6>${st.tri.map(k=>{ const v=tr[k]||''; const [l,h]=TRI[k]; return `<div class="titem"><div class="lbl">${esc(l)}<small>${esc(h)}</small></div><div class="tri"><button data-tri="${k}" data-val="ok" class="${v==='ok'?'on-ok':''}">OK</button><button data-tri="${k}" data-val="flag" class="${v==='flag'?'on-flag':''}">FLAG</button><button data-tri="${k}" data-val="fail" class="${v==='fail'?'on-fail':''}">FAIL</button></div></div>`; }).join('')}`:''}
+        ${st.rate.length?`<h6>Rate now</h6>${st.rate.map(k=>{ const s=RSUB[k]; const v=rt[k]||0; return `<div class="rsub"><div class="lbl"><span>${esc(s.label)}</span><small>×${s.w}${s.fatal?' · 1 = FAIL':''}</small></div>
+          <div class="pips">${[1,2,3,4,5].map(n=>`<button data-rate="${k}" data-v="${n}" class="${v===n?'on':''}${s.fatal&&n===1?' fatal':''}">${n}</button>`).join('')}</div>
+          <div class="desc${v===1&&s.fatal?' fail':''}">${v?esc(s.d[v-1]):'<span style="color:var(--ink-35)">1 = '+esc(s.d[0])+' · 5 = '+esc(s.d[4])+'</span>'}</div></div>`; }).join('')}`:''}
+        ${i<WALK.length-1?`<button class="btn ghost sm wnext" data-wnext="${st.id}">Next: ${esc(WALK[i+1].name)} →</button>`:''}
+      </div></div>`; }).join('')}
+  </div>`;
+}
+function wireWalk(){
+  const p=props[openPropId]; if(!p) return; p.report=p.report||blankReport(); const r=p.report; r.readings=r.readings||{}; r.triage=r.triage||{};
+  const open=walkOpen[p.id]||(walkOpen[p.id]={});
+  const stamp=()=>{ if(!r.inspectedAt) r.inspectedAt=new Date().toISOString().slice(0,16); };
+  $$('#walkSec [data-wtoggle]').forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.wtoggle; open[id]=!open[id]; b.parentElement.classList.toggle('open',!!open[id]); }));
+  $$('#walkSec [data-wnext]').forEach(b=>b.addEventListener('click',()=>{ const i=WALK.findIndex(s=>s.id===b.dataset.wnext); open[WALK[i].id]=false; open[WALK[i+1].id]=true; const steps=$$('#walkSec .wstep'); steps[i].classList.remove('open'); steps[i+1].classList.add('open'); steps[i+1].scrollIntoView({behavior:'smooth',block:'start'}); }));
+  $$('#walkSec [data-rd]').forEach(el=>{
+    el.addEventListener('input',()=>{ const s=readState(el.dataset.rd,el.dataset.rt,el.value.trim()); const bd=$(`#walkSec [data-badge="${el.dataset.rd}"]`); bd.className='wbadge '+s; bd.textContent=s==='none'?'—':s.toUpperCase(); });
+    el.addEventListener('change',()=>{ const v=el.value.trim().replace(',','.'); if(v==='') delete r.readings[el.dataset.rd]; else r.readings[el.dataset.rd]=v; stamp(); putProp(p); });
+  });
+  $$('#walkSec [data-tri]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.tri,v=b.dataset.val; r.triage[k]=r.triage[k]===v?'':v; if(r.triage[k]==='fail'&&!r.verdict) r.verdict='no'; stamp(); putProp(p); }));
+  $$('#walkSec [data-rate]').forEach(b=>b.addEventListener('click',()=>{ p.rating=p.rating||{}; const k=b.dataset.rate, v=Number(b.dataset.v); p.rating[k]=p.rating[k]===v?0:v; if(!p.rating[k]) delete p.rating[k]; putProp(p); }));
+}
 /* ---------------- rating section ---------------- */
 function ratingHTML(p,sc){
   const r=p.rating||{}, w=Object.assign(defaultWeights(),settings.weights||{});
   const head=sc.fatal.length?`<span class="big fail">FAIL <em>${esc(sc.fatal[0])}</em></span>`:(sc.score===null?`<span class="big" style="color:var(--ink-35)">— <em>tap to rate</em></span>`:`<span class="big" style="color:${scoreColor(sc.score)}">${sc.score.toFixed(1)} <em>/ 5 · ${sc.rated} of ${sc.total} rated</em></span>`);
   return `<div class="sec rating" id="ratingSec"><h4>Rating</h4><div class="rhead">${head}</div>
-    ${RATING.map(c=>`<div class="rcat" style="border-left-color:${CAT_COLORS[c.key]}"><h5><span>${c.name} <span class="w">${w[c.key]}%</span></span><span class="cswrap"><span class="catbar"><i style="--cbw:${sc.cats[c.key]?Math.round(sc.cats[c.key]/5*100):0}%;--cbc:${CAT_COLORS[c.key]}"></i></span><span class="cs">${sc.cats[c.key]?sc.cats[c.key].toFixed(1):'—'}</span></span></h5>
+    ${RATING.map(c=>`<div class="rcat" style="border-left-color:${CAT_COLORS[c.key]}"><h5><span>${c.name} <span class="w">${w[c.key]}%</span> <span class="owner">${CAT_OWNER[c.key]}</span></span><span class="cswrap"><span class="catbar"><i style="--cbw:${sc.cats[c.key]?Math.round(sc.cats[c.key]/5*100):0}%;--cbc:${CAT_COLORS[c.key]}"></i></span><span class="cs">${sc.cats[c.key]?sc.cats[c.key].toFixed(1):'—'}</span></span></h5>
       ${c.subs.map(s=>{ const v=r[s.k]||0; return `<div class="rsub"><div class="lbl"><span>${esc(s.label)}</span><small>×${s.w}${s.fatal?' · 1 = FAIL':''}</small></div>
         <div class="pips">${[1,2,3,4,5].map(n=>`<button data-rate="${s.k}" data-v="${n}" class="${v===n?'on':''}${s.fatal&&n===1?' fatal':''}">${n}</button>`).join('')}</div>
         <div class="desc${v===1&&s.fatal?' fail':''}">${v?esc(s.d[v-1]):'<span style="color:var(--ink-35)">1 = '+esc(s.d[0])+' · 5 = '+esc(s.d[4])+'</span>'}</div></div>`; }).join('')}
@@ -1776,13 +1902,15 @@ else {
   auth=getAuth(app);
   setPersistence(auth,browserLocalPersistence).catch(()=>{});
   fs=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
-  $('#gBtn').addEventListener('click',async()=>{ $('#gErr').textContent=''; try{ await signInWithEmailAndPassword(auth,$('#gEmail').value.trim(),$('#gPass').value); }catch(e){ $('#gErr').textContent='Sign-in failed: '+(e.code||e.message).replace('auth/','').replace(/-/g,' '); } });
-  $('#gPass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#gBtn').click(); });
-  $('#btnOut').addEventListener('click',()=>signOut(auth));
+  const whoKey='akiyaMe'; let who='Dan'; try{ who=localStorage.getItem(whoKey)||'Dan'; }catch(e){}
+  const showWho=()=>{ $('#btnOut').textContent='This phone: '+who+' (tap to switch)'; me=who; $('#savedAt').textContent='Editing as '+who; };
+  $('#btnOut').addEventListener('click',()=>{ who=who==='Dan'?'Cas':'Dan'; try{ localStorage.setItem(whoKey,who); }catch(e){} showWho(); toast('This phone is now '+who+'.'); });
+  const goIn=async()=>{ $('#gErr').textContent=''; try{ await signInAnonymously(auth); }catch(e){ $('#gate').style.display='grid'; $('#gErr').textContent='Could not connect: '+(e.code||e.message).replace('auth/','')+'. If this says admin-restricted-operation, turn on Anonymous sign-in in Firebase.'; } };
+  $('#gBtn').addEventListener('click',goIn);
   onAuthStateChanged(auth,async user=>{
     unsubs.forEach(u=>u()); unsubs=[];
-    if(!user){ $('#gate').style.display='grid'; props={}; agents={}; photos={}; return; }
-    me=(user.email||'').split('@')[0]; $('#savedAt').textContent='Signed in as '+me;
+    if(!user){ goIn(); return; }
+    showWho();
     $('#gate').style.display='none';
     setSync('','syncing');
     try{
