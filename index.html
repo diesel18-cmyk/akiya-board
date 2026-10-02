@@ -226,7 +226,8 @@ html[data-theme="dark"] .leaflet-control-attribution a{color:var(--indigo)}
 }
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
 .card:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
-.shot{position:relative;height:150px;background:var(--paper-2);overflow:hidden}
+.shot{position:relative;height:150px;background:var(--paper-2);overflow:hidden;touch-action:pan-y}
+.shot img{-webkit-user-drag:none;user-select:none}
 .shot img{width:100%;height:100%;object-fit:cover;display:block}
 .shot .none{
   height:100%;display:grid;place-content:center;color:var(--ink-35);
@@ -1219,7 +1220,7 @@ const allAgents=()=>Object.values(agents);
 const photosFor=(id,kind)=>Object.values(photos).filter(x=>x.propId===id && (!kind||x.kind===kind)).sort((a,b)=>(a.order||0)-(b.order||0));
 
 let filters={prefs:new Set(),tiers:new Set(),statuses:new Set(),verdicts:new Set(),q:'',sort:'rating',groupByDay:true};
-let cardIdx={};
+let cardIdx={}, swipedAt=0;
 let colorMode='prefecture', map, markerLayer, routeLayer, mapReady=false, showRoute=false;
 const DAY_COLORS=['#C0392B','#2980B9','#27AE60','#8E44AD','#D35400','#16A085','#2C3E50','#E67E22','#00838F','#C2185B','#5D4037','#7F8C8D'];
 let editingId=null, editingAgentId=null, editImages=[], carouselIdx=0, openPropId=null, drawerDirty=false;
@@ -1411,7 +1412,7 @@ function cardHTML(p){
   const st=STATUS[statusOf(p)], ag=agentById(p.agentId), imgs=photosFor(p.id,'listing');
   const idx=imgs.length?Math.min(cardIdx[p.id]||0,imgs.length-1):0;
   const img=imgs.length
-    ?`<img src="${esc(imgs[idx].src)}" alt="${esc(p.name)}" loading="lazy">`
+    ?`<img src="${esc(imgs[idx].src)}" alt="${esc(p.name)}" loading="lazy" draggable="false">`
     +(imgs.length>1?`<button class="cnav prev" title="Previous photo" onclick="event.stopPropagation();cardSlide('${p.id}',-1)">‹</button>`
       +`<button class="cnav next" title="Next photo" onclick="event.stopPropagation();cardSlide('${p.id}',1)">›</button>`
       +`<span class="shotcount">${idx+1} / ${imgs.length}</span>`
@@ -1473,7 +1474,7 @@ function renderGrid(list){
     if(unsched.length) html+=dayBarHTML('Unscheduled','',unsched.length,false)+unsched.map(cardHTML).join('');
     $('#grid').innerHTML=html;
   }
-  $$('#grid .card').forEach(c=>{ c.addEventListener('click',()=>openDrawer(c.dataset.id)); c.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();openDrawer(c.dataset.id);} }); });
+  $$('#grid .card').forEach(c=>{ c.addEventListener('click',()=>{ if(Date.now()-swipedAt<500) return; openDrawer(c.dataset.id); }); c.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();openDrawer(c.dataset.id);} }); });
   wireCardSwipe();
 }
 function cardSlide(id,n){
@@ -1483,19 +1484,19 @@ function cardSlide(id,n){
 }
 function wireCardSwipe(){
   $$('#grid .shot').forEach(shot=>{
-    if(shot.dataset.wired) return; shot.dataset.wired='1';
-    const n=Number(shot.dataset.photos||0); if(n<2) return;
-    let sx=0,sy=0,dragging=false;
-    shot.addEventListener('pointerdown',e=>{ dragging=true; sx=e.clientX; sy=e.clientY; });
-    shot.addEventListener('pointerup',e=>{
-      if(!dragging) return; dragging=false;
-      const dx=e.clientX-sx, dy=e.clientY-sy;
-      if(Math.abs(dx)>36 && Math.abs(dx)>Math.abs(dy)){
-        e.stopPropagation();
-        const id=shot.closest('.card').dataset.id;
-        cardSlide(id,dx<0?1:-1);
-      }
-    });
+    if(Number(shot.dataset.photos||0)<2) return;
+    const card=shot.closest('.card'); let sx=0,sy=0,on=false;
+    const start=(x,y)=>{ on=true; sx=x; sy=y; };
+    const end=(x,y)=>{
+      if(!on) return; on=false;
+      const dx=x-sx, dy=y-sy;
+      if(Math.abs(dx)>30 && Math.abs(dx)>Math.abs(dy)*1.2){ swipedAt=Date.now(); cardSlide(card.dataset.id,dx<0?1:-1); }
+    };
+    shot.addEventListener('touchstart',e=>{ const t=e.touches[0]; start(t.clientX,t.clientY); },{passive:true});
+    shot.addEventListener('touchend',e=>{ const t=e.changedTouches[0]; end(t.clientX,t.clientY); });
+    shot.addEventListener('touchcancel',()=>{ on=false; });
+    shot.addEventListener('mousedown',e=>{ start(e.clientX,e.clientY); });
+    shot.addEventListener('mouseup',e=>{ end(e.clientX,e.clientY); });
   });
 }
 
