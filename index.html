@@ -260,6 +260,15 @@ html[data-theme="dark"] .leaflet-control-attribution a{color:var(--indigo)}
 .daybar.empty{color:var(--shu)}
 .daybar.empty h3{color:var(--shu)}
 .daybar.empty .dn{color:var(--shu)}
+.stamp{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-11deg);z-index:3;pointer-events:none;
+  border:4px solid #E02020;color:#E02020;background:rgba(255,255,255,.88);
+  font-family:var(--display);font-weight:800;font-size:25px;line-height:1;letter-spacing:.06em;text-transform:uppercase;
+  padding:9px 16px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.35);
+}
+.carousel .stamp{font-size:34px;padding:12px 22px;border-width:5px}
+.shot.is-stamped img,.carousel.is-stamped img{filter:grayscale(.85) brightness(.6)}
+.shot.is-stamped .none{opacity:.45}
 .cbody{padding:12px 13px 13px;display:flex;flex-direction:column;gap:9px;flex:1}
 .crow1{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
 .cname{font-family:var(--display);font-weight:700;font-size:15.5px;line-height:1.25;margin:0}
@@ -1426,7 +1435,7 @@ function cardHTML(p){
     +(hidden>0?`<span class="tag more" title="${esc(ordered.slice(4).join(', '))}">+${hidden} more</span>`:'');
   const v=p.report&&p.report.verdict;
   return `<article class="card" tabindex="0" role="button" data-id="${p.id}" style="--pf:${prefColor(p)};--stc:${st.color}" aria-label="${esc(p.name)}">
-    <div class="shot" data-photos="${imgs.length}">${img}${more}</div>
+    <div class="shot${p.stamp?' is-stamped':''}" data-photos="${imgs.length}">${img}${more}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>
     <div class="cbody">
       <div class="crow1">
         <div><p class="pref">${esc(prefOf(p))}</p><h3 class="cname">${esc(p.name)}</h3><p class="caddr">${esc(p.address)}</p></div>
@@ -1582,7 +1591,7 @@ function redrawDrawerSafe(){
 function drawDrawer(){
   const p=props[openPropId]; if(!p) return;
   const st=STATUS[statusOf(p)], ag=agentById(p.agentId), {done,total}=checkStats(p), imgs=photosFor(p.id,'listing'), sc=scoreProp(p);
-  const car=imgs.length?`<div class="carousel"><img src="${esc(imgs[Math.min(carouselIdx,imgs.length-1)].src)}" alt="">${imgs.length>1?`<button class="nav prev" onclick="slide(-1)">‹</button><button class="nav next" onclick="slide(1)">›</button><span class="idx">${Math.min(carouselIdx,imgs.length-1)+1} / ${imgs.length}</span>`:''}</div>`:`<div class="drop" style="cursor:default">No listing photos yet — add them with Edit.</div>`;
+  const car=imgs.length?`<div class="carousel${p.stamp?' is-stamped':''}"><img src="${esc(imgs[Math.min(carouselIdx,imgs.length-1)].src)}" alt="">${imgs.length>1?`<button class="nav prev" onclick="slide(-1)">‹</button><button class="nav next" onclick="slide(1)">›</button><span class="idx">${Math.min(carouselIdx,imgs.length-1)+1} / ${imgs.length}</span>`:''}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`:`<div class="drop" style="cursor:default;position:relative">No listing photos yet — add them with Edit.${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`;
   $('#drawer').innerHTML=`
   <div class="dhead" style="--stc:${st.color};--pf:${prefColor(p)}">
     <div><p class="pref" style="--pf:${prefColor(p)}">${esc(prefOf(p))}</p><h2>${esc(p.name)}</h2><p class="caddr">${esc(p.address)}</p></div>
@@ -1615,7 +1624,7 @@ function drawDrawer(){
   </div>
   <div class="dfoot">
     <button class="btn danger" onclick="removeProperty('${p.id}')">Delete</button>
-    <div style="display:flex;gap:8px">${typeof p.lat==='number'?`<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">Directions ↗</a>`:''}<button class="btn" onclick="editProperty('${p.id}')">Edit</button></div>
+    <div style="display:flex;gap:8px">${typeof p.lat==='number'?`<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">Directions ↗</a>`:''}<button class="btn ghost" onclick="cycleStamp('${p.id}')">${p.stamp?'Stamp: '+esc(p.stamp):'Add stamp'}</button><button class="btn" onclick="editProperty('${p.id}')">Edit</button></div>
   </div>`;
   wireWalk(); wireRating(); wireReport();
   $$('#drawer input[data-check]').forEach(cb=>cb.addEventListener('change',()=>{ const pr=props[openPropId]; pr.checks=pr.checks||{}; pr.checks[cb.dataset.check]=cb.checked; putProp(pr); }));
@@ -1624,6 +1633,9 @@ $('#drawer').addEventListener('focusout',()=>{ if(drawerDirty){ drawerDirty=fals
 function slide(n){ const len=photosFor(openPropId,'listing').length; if(!len) return; carouselIdx=(carouselIdx+n+len)%len; drawDrawer(); }
 window.slide=slide;
 window.cardSlide=cardSlide;
+const STAMPS=['','No Response','Declined'];
+function cycleStamp(id){ const p=props[id]; if(!p) return; const i=STAMPS.indexOf(p.stamp||''); p.stamp=STAMPS[(i+1)%STAMPS.length]; putProp(p); drawDrawer(); renderGrid(visible()); toast(p.stamp?'Stamped: '+p.stamp:'Stamp removed'); }
+window.cycleStamp=cycleStamp;
 function removeProperty(id){ if(!confirm('Delete this property for both of you? This cannot be undone.')) return; delProp(id); closeDrawer(); toast('Property deleted.'); }
 window.removeProperty=removeProperty;
 
@@ -1885,6 +1897,7 @@ async function mergeData(d,{replaceImages=false}={}){
     const ex=props[p.id]||allProps().find(x=>x.name.toLowerCase()===String(p.name||'').toLowerCase());
     let target;
     if(ex){ const keepChecks=ex.checks, keepRating=ex.rating, keepReport=ex.report; target=Object.assign(ex,p,{id:ex.id}); target.checks=Object.assign({},keepChecks,p.checks||{}); target.rating=Object.assign({},keepRating,p.rating||{}); target.report=Object.assign(blankReport(),keepReport,p.report||{}); updated++; }
+    else if(!p.name){ continue; }
     else { target=Object.assign({id:uid('p'),checks:{},rating:{},report:blankReport(),tags:[],notes:'',url:'',viewing:'',status:'shortlisted',agentId:'',lat:null,lng:null,price:null,coordApprox:true,added:Date.now()},p); added++; }
     if(!target.id) target.id=uid('p');
     await putProp(target);
