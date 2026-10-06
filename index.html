@@ -267,6 +267,10 @@ html[data-theme="dark"] .leaflet-control-attribution a{color:var(--indigo)}
   padding:9px 16px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.35);
 }
 .carousel .stamp{font-size:34px;padding:12px 22px;border-width:5px}
+.estrib{position:absolute;top:9px;left:0;z-index:4;pointer-events:none;background:#3A4A63;color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;line-height:1;padding:5px 10px 5px 8px;border-radius:0 3px 3px 0;box-shadow:0 1px 5px rgba(0,0,0,.4);white-space:nowrap}
+.estrib.r1{background:#B8860B}.estrib.r2{background:#7C8794}.estrib.r3{background:#9A6233}
+.carousel .estrib{top:12px;font-size:12px;padding:6px 12px 6px 10px}
+.drop .estrib{position:static;display:inline-block;margin:0 10px 0 0;border-radius:3px;vertical-align:middle}
 .shot.is-stamped img,.carousel.is-stamped img{filter:grayscale(.85) brightness(.6)}
 .shot.is-stamped .none{opacity:.45}
 .cbody{padding:12px 13px 13px;display:flex;flex-direction:column;gap:9px;flex:1}
@@ -1435,7 +1439,7 @@ function cardHTML(p){
     +(hidden>0?`<span class="tag more" title="${esc(ordered.slice(4).join(', '))}">+${hidden} more</span>`:'');
   const v=p.report&&p.report.verdict;
   return `<article class="card" tabindex="0" role="button" data-id="${p.id}" style="--pf:${prefColor(p)};--stc:${st.color}" aria-label="${esc(p.name)}">
-    <div class="shot${p.stamp?' is-stamped':''}" data-photos="${imgs.length}">${img}${more}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>
+    <div class="shot${p.stamp?' is-stamped':''}" data-photos="${imgs.length}">${img}${more}${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>
     <div class="cbody">
       <div class="crow1">
         <div><p class="pref">${esc(prefOf(p))}</p><h3 class="cname">${esc(p.name)}</h3><p class="caddr">${esc(p.address)}</p></div>
@@ -1447,6 +1451,13 @@ function cardHTML(p){
       <div class="tags">${tags}</div>
       <div class="cfoot"><span>${ag?esc(ag.name):'<em>No agent</em>'}</span><span class="chk">${p.updatedBy?esc(p.updatedBy)+' · '+fmtWhen(p.updatedAt):''}</span></div>
     </div></article>`;
+}
+function hasEst(p){ return p.est!=null&&p.est!==''&&!isNaN(Number(p.est)); }
+function estHTML(p){
+  if(!hasEst(p)) return '';
+  const list=Object.values(props).filter(x=>hasEst(x)&&statusOf(x)!=='inactive').sort((a,b)=>Number(b.est)-Number(a.est));
+  const r=list.findIndex(x=>x.id===p.id)+1;
+  return `<div class="estrib${r&&r<=3?' r'+r:''}" title="Estimated from the listing, before inspection">EST ${r?'#'+r+' · ':''}${Math.round(Number(p.est))}</div>`;
 }
 function dayBarHTML(label,place,count,flagEmpty){
   const n=count===1?'1 property':count+' properties';
@@ -1591,7 +1602,7 @@ function redrawDrawerSafe(){
 function drawDrawer(){
   const p=props[openPropId]; if(!p) return;
   const st=STATUS[statusOf(p)], ag=agentById(p.agentId), {done,total}=checkStats(p), imgs=photosFor(p.id,'listing'), sc=scoreProp(p);
-  const car=imgs.length?`<div class="carousel${p.stamp?' is-stamped':''}"><img src="${esc(imgs[Math.min(carouselIdx,imgs.length-1)].src)}" alt="">${imgs.length>1?`<button class="nav prev" onclick="slide(-1)">‹</button><button class="nav next" onclick="slide(1)">›</button><span class="idx">${Math.min(carouselIdx,imgs.length-1)+1} / ${imgs.length}</span>`:''}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`:`<div class="drop" style="cursor:default;position:relative">No listing photos yet — add them with Edit.${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`;
+  const car=imgs.length?`<div class="carousel${p.stamp?' is-stamped':''}"><img src="${esc(imgs[Math.min(carouselIdx,imgs.length-1)].src)}" alt="">${imgs.length>1?`<button class="nav prev" onclick="slide(-1)">‹</button><button class="nav next" onclick="slide(1)">›</button><span class="idx">${Math.min(carouselIdx,imgs.length-1)+1} / ${imgs.length}</span>`:''}${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`:`<div class="drop" style="cursor:default;position:relative">No listing photos yet — add them with Edit.${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`;
   $('#drawer').innerHTML=`
   <div class="dhead" style="--stc:${st.color};--pf:${prefColor(p)}">
     <div><p class="pref" style="--pf:${prefColor(p)}">${esc(prefOf(p))}</p><h2>${esc(p.name)}</h2><p class="caddr">${esc(p.address)}</p></div>
@@ -1798,6 +1809,7 @@ function propFormHTML(p){
   <label class="field"><span>Viewing date &amp; time (optional)</span><input id="pfView" type="datetime-local" value="${p&&p.viewing?esc(p.viewing):''}"></label>
   <div class="f2">
     <label class="field"><span>Price (JPY)</span><input id="pfPrice" type="number" step="10000" value="${p&&p.price!=null?p.price:''}" placeholder="Blank = TBD"><span class="hint" id="pfPriceHint"></span></label>
+    <label class="field"><span>Estimated score (0–100)</span><input id="pfEst" type="number" min="0" max="100" step="1" value="${p&&hasEst(p)?p.est:''}" placeholder="Blank = no ribbon"></label>
     <label class="field"><span>Listing URL</span><input id="pfUrl" value="${p?esc(p.url):''}" placeholder="https://…"></label>
   </div>
   <label class="field"><span>Agent</span><select id="pfAgent">${agOpts}</select></label>
@@ -1835,7 +1847,7 @@ function downscale(dataUrl,maxW,q){ return new Promise(res=>{ const img=new Imag
 async function saveProp(){
   const name=$('#pfName').value.trim(); if(!name){ toast('Give the property a name first.'); $('#pfName').focus(); return; }
   const urls=$('#pfUrls').value.split('\n').map(s=>s.trim()).filter(Boolean), priceRaw=$('#pfPrice').value, lat=parseFloat($('#pfLat').value), lng=parseFloat($('#pfLng').value);
-  const data={name,prefecture:$('#pfPref').value,status:$('#pfStatus').value,address:$('#pfAddr').value.trim(),price:priceRaw===''?null:Number(priceRaw),url:$('#pfUrl').value.trim(),agentId:$('#pfAgent').value,lat:isNaN(lat)?null:lat,lng:isNaN(lng)?null:lng,viewing:$('#pfView').value,tags:$('#pfTags').value.split(',').map(s=>s.trim()).filter(Boolean),notes:$('#pfNotes').value};
+  const data={name,prefecture:$('#pfPref').value,status:$('#pfStatus').value,address:$('#pfAddr').value.trim(),price:priceRaw===''?null:Number(priceRaw),url:$('#pfUrl').value.trim(),agentId:$('#pfAgent').value,lat:isNaN(lat)?null:lat,lng:isNaN(lng)?null:lng,viewing:$('#pfView').value,tags:$('#pfTags').value.split(',').map(s=>s.trim()).filter(Boolean),notes:$('#pfNotes').value,est:$('#pfEst').value===''?null:Number($('#pfEst').value)};
   let p;
   if(editingId){ p=Object.assign(props[editingId],data); if(data.lat!==null) p.coordApprox=false; }
   else p=Object.assign({id:uid('p'),checks:{},rating:{},report:blankReport(),added:Date.now(),coordApprox:false},data);
