@@ -267,6 +267,31 @@ html[data-theme="dark"] .leaflet-control-attribution a{color:var(--indigo)}
   padding:9px 16px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.35);
 }
 .carousel .stamp{font-size:34px;padding:12px 22px;border-width:5px}
+.svintro{font-size:13px;color:var(--ink-60);margin:0 0 6px}
+.svgroup{margin-top:18px}
+.svgroup>h3{font-family:var(--display);font-size:15px;margin:0 0 2px;display:flex;align-items:baseline;gap:8px}
+.svgroup>h3 span{font-family:var(--mono);font-size:10.5px;color:var(--ink-35);font-weight:400}
+.svlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:8px}
+.sv{background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--svc,var(--ink-35));border-radius:10px;overflow:hidden}
+.sv .svhead{display:flex;gap:10px;align-items:flex-start;padding:12px 12px 10px;cursor:pointer}
+.sv .svrank{flex:none;width:26px;height:26px;border-radius:50%;background:var(--paper-2);border:1px solid var(--rule);font-family:var(--mono);font-size:12px;font-weight:700;display:grid;place-items:center;color:var(--ink-60)}
+.sv h4{font-family:var(--display);font-size:15.5px;margin:0;line-height:1.25}
+.sv .svcov{font-size:12.5px;color:var(--ink-60);margin-top:2px}
+.sv .svprice{font-family:var(--mono);font-size:11.5px;margin-top:5px;color:var(--ink)}
+.sv .svpill{display:inline-block;margin-top:7px;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:999px;color:#fff;background:var(--svc,var(--ink-35))}
+.sv .svlatest{font-size:12.5px;margin-top:7px;color:var(--ink-60);border-left:2px solid var(--rule);padding-left:8px}
+.sv .chev{margin-left:auto;color:var(--ink-35);transition:transform .15s}
+.sv.open .chev{transform:rotate(180deg)}
+.sv .svbody{display:none;padding:0 12px 12px;gap:9px;flex-direction:column}
+.sv.open .svbody{display:flex}
+.sv .svlinks{display:flex;flex-wrap:wrap;gap:7px}
+.sv .svkv{font-size:13px;word-break:break-word}
+.sv .svkv b{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-35);font-weight:500;display:block}
+.sv .svlog{display:flex;flex-direction:column;gap:6px}
+.sv .svlog div{font-size:13px;background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;padding:7px 9px}
+.sv .svlog time{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-35);margin-bottom:2px}
+.sv .svadd{display:flex;gap:7px}
+.sv .svadd input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font:inherit;font-size:13.5px;background:var(--card);color:var(--ink)}
 .meetline{display:flex;gap:8px;align-items:flex-start;margin-top:7px;padding:8px 10px;border-radius:6px;font-size:13px;font-weight:700;line-height:1.35;background:#1F4FD8;color:#fff;border:2px solid #1F4FD8}
 .meetline b{flex:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;background:#fff;color:#1F4FD8;padding:3px 6px;border-radius:3px;margin-top:1px;white-space:nowrap}
 .meetline a{color:#fff;text-decoration:underline}
@@ -924,6 +949,7 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
   <button role="tab" id="tab-rank" aria-selected="false"><span class="ic">★</span>Ranking</button>
   <button role="tab" id="tab-agents" aria-selected="false"><span class="ic">☎</span>Agents<span class="count" id="cAgents"></span></button>
   <button role="tab" id="tab-trip" aria-selected="false"><span class="ic">▤</span>Trip</button>
+  <button role="tab" id="tab-services" aria-selected="false"><span class="ic">✎</span>Services</button>
   <button role="tab" id="tab-guide" aria-selected="false"><span class="ic">✓</span>Checks</button>
 </nav>
 
@@ -978,6 +1004,12 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
 <section class="panel" id="panel-agents" role="tabpanel" hidden>
   <div class="gridhead"><h2>Agents</h2><button class="btn ghost sm" id="btnAddAgent">+ Add</button></div>
   <div class="agents" id="agents"></div>
+</section>
+
+<section class="panel" id="panel-services" role="tabpanel" hidden>
+  <div class="gridhead"><h2>Services</h2><button class="btn ghost sm" id="btnAddService">+ Add</button></div>
+  <p class="svintro">Inspectors, scriveners and anyone else you need for the purchase. Tap a card to see contact details and add updates as replies come in.</p>
+  <div id="services"></div>
 </section>
 
 <section class="panel" id="panel-trip" role="tabpanel" hidden>
@@ -1235,7 +1267,9 @@ function defaultWeights(){ const w={}; RATING.forEach(c=>w[c.key]=c.w); return w
 let props={}, agents={}, photos={}, settings={aud:100,tripStart:'2026-11-09',weights:defaultWeights()};
 let me='', fs, auth, unsubs=[];
 const allProps=()=>Object.values(props);
-const allAgents=()=>Object.values(agents);
+const allContacts=()=>Object.values(agents);
+const allAgents=()=>allContacts().filter(a=>!a.kind||a.kind==='agent');
+const allServices=()=>allContacts().filter(a=>a.kind&&a.kind!=='agent');
 const photosFor=(id,kind)=>Object.values(photos).filter(x=>x.propId===id && (!kind||x.kind===kind)).sort((a,b)=>(a.order||0)-(b.order||0));
 
 let filters={prefs:new Set(),tiers:new Set(),statuses:new Set(),verdicts:new Set(),q:'',sort:'rating',groupByDay:true};
@@ -1259,6 +1293,19 @@ async function delAgent(id){ delete agents[id]; scheduleRender(); try{ await del
 async function putPhoto(ph){ photos[ph.id]=ph; scheduleRender(); try{ await setDoc(doc(fs,'photos',ph.id),clean(ph)); }catch(e){ toast('Photo save failed (too large?): '+e.message); } }
 async function delPhoto(id){ delete photos[id]; scheduleRender(); try{ await deleteDoc(doc(fs,'photos',id)); }catch(e){} }
 async function putSettings(){ try{ await setDoc(doc(fs,'meta','settings'),clean(settings),{merge:true}); }catch(e){ toast('Settings save failed: '+e.message); } }
+/* photos are stored as long data: strings; hand the page a short blob: address instead so
+   redrawing the list does not rebuild megabytes of HTML each time */
+let photosLoaded=false; const blobCache={};
+function srcOf(ph){
+  const s=(ph&&ph.src)||''; if(!s.startsWith('data:')||!ph.id) return s;
+  const c=blobCache[ph.id]; if(c&&c.len===s.length) return c.url;
+  try{
+    const i=s.indexOf(','), mime=(s.slice(0,i).match(/data:(.*?)(;|$)/)||[])[1]||'image/jpeg';
+    const bin=atob(s.slice(i+1)), u=new Uint8Array(bin.length); for(let k=0;k<bin.length;k++) u[k]=bin.charCodeAt(k);
+    if(c) URL.revokeObjectURL(c.url);
+    const url=URL.createObjectURL(new Blob([u],{type:mime})); blobCache[ph.id]={url,len:s.length}; return url;
+  }catch(e){ return s; }
+}
 function newPhoto(propId,kind,src,tag,caption){ return {id:uid('ph'),propId,kind,src,tag:tag||'other',caption:caption||'',order:Date.now(),by:me}; }
 
 /* ---------------- helpers ---------------- */
@@ -1378,7 +1425,7 @@ function renderMap(list){
     const icon=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,18],popupAnchor:[0,-16],html:`<span class="pin${statusOf(p)==='inactive'?' is-dim':''}" style="--pin:${markerColor(p)}"></span>`});
     const th=photosFor(p.id,'listing')[0];
     const m=L.marker([p.lat,p.lng],{icon}).addTo(markerLayer);
-    m.bindPopup(`<div class="pop">${th?`<img src="${esc(th.src)}" alt="">`:''}<p class="pop-t">${esc(p.name)}</p><p class="pop-a">${esc(p.address)}</p><p class="pop-p">${p.price==null?'Price TBD':'¥'+Number(p.price).toLocaleString()+' · '+fx(p.price)}</p><button class="btn sm" onclick="openDrawer('${p.id}')">Open full details</button></div>`);
+    m.bindPopup(`<div class="pop">${th?`<img src="${esc(srcOf(th))}" alt="">`:''}<p class="pop-t">${esc(p.name)}</p><p class="pop-a">${esc(p.address)}</p><p class="pop-p">${p.price==null?'Price TBD':'¥'+Number(p.price).toLocaleString()+' · '+fx(p.price)}</p><button class="btn sm" onclick="openDrawer('${p.id}')">Open full details</button></div>`);
   });
   const key=JSON.stringify(pts);
   if(pts.length&&key!==lastBounds){ map.fitBounds(pts,{padding:[45,45],maxZoom:9}); lastBounds=key; }
@@ -1431,12 +1478,12 @@ function cardHTML(p){
   const st=STATUS[statusOf(p)], ag=agentById(p.agentId), imgs=photosFor(p.id,'listing');
   const idx=imgs.length?Math.min(cardIdx[p.id]||0,imgs.length-1):0;
   const img=imgs.length
-    ?`<img src="${esc(imgs[idx].src)}" alt="${esc(p.name)}" loading="lazy" draggable="false">`
+    ?`<img src="${esc(srcOf(imgs[idx]))}" alt="${esc(p.name)}" loading="lazy" draggable="false">`
     +(imgs.length>1?`<button class="cnav prev" title="Previous photo" onclick="event.stopPropagation();cardSlide('${p.id}',-1)">‹</button>`
       +`<button class="cnav next" title="Next photo" onclick="event.stopPropagation();cardSlide('${p.id}',1)">›</button>`
       +`<span class="shotcount">${idx+1} / ${imgs.length}</span>`
       +`<div class="cdots">${imgs.map((_,i)=>`<i class="${i===idx?'on':''}"></i>`).join('')}</div>`:'')
-    :`<div class="none">No photo yet</div>`;
+    :`<div class="none">${photosLoaded?'No photo yet':'Loading photos…'}</div>`;
   const more='';
   const allTags=(p.tags||[]);
   const ordered=[...allTags].sort((a,b)=>{ const rank=t=>{const k=tagClass(t); return k==='flag'||k==='risk'?0:k==='wait'?1:k==='good'?2:3;}; return rank(a)-rank(b); });
@@ -1567,6 +1614,72 @@ function renderAgents(){
     </div>`; }).join('');
   $('#cAgents').textContent=allAgents().length;
 }
+const SV_KIND={inspector:{label:'Building inspectors',one:'Inspector',hint:'Structure, underfloor and roof-space checks before you buy'},scrivener:{label:'Judicial scriveners',one:'Scrivener',hint:'Ownership transfer registration and settlement paperwork'},other:{label:'Other services',one:'Other',hint:''}};
+const SV_STATUS={todo:{label:'To contact',color:'#8A93A0'},enquired:{label:'Enquiry sent',color:'#C98A1B'},replied:{label:'Replied',color:'#1F4FD8'},quoted:{label:'Quote received',color:'#6B4FBB'},chosen:{label:'Chosen',color:'#2E8B57'},out:{label:'Ruled out',color:'#B23B3B'}};
+let openServices=new Set();
+function svLink(u){ return /^https?:\/\//i.test(u||'')?u:''; }
+function renderServices(){
+  const el=$('#services'); if(!el) return;
+  const all=allServices();
+  if(!all.length){ el.innerHTML='<div class="empty" style="display:block"><p>No services yet. Tap + Add, or import a file that includes them.</p></div>'; return; }
+  el.innerHTML=Object.keys(SV_KIND).map(k=>{
+    const list=all.filter(s=>(SV_KIND[s.kind]?s.kind:'other')===k).sort((a,b)=>(Number(a.rank)||99)-(Number(b.rank)||99)||a.name.localeCompare(b.name));
+    if(!list.length) return '';
+    return `<div class="svgroup"><h3>${SV_KIND[k].label}<span>${list.length}</span></h3>${SV_KIND[k].hint?`<p class="svintro">${SV_KIND[k].hint}</p>`:''}<div class="svlist">${list.map(s=>{
+      const st=SV_STATUS[s.svStatus]||SV_STATUS.todo, log=(s.log||[]).map((l,i)=>({l,i})).sort((a,b)=>((Date.parse(b.l.t)||0)-(Date.parse(a.l.t)||0))||(b.i-a.i)).map(x=>x.l), link=svLink(s.url);
+      return `<div class="sv${openServices.has(s.id)?' open':''}" style="--svc:${st.color}">
+        <div class="svhead" onclick="toggleService('${s.id}')">
+          ${s.rank?`<div class="svrank">${esc(String(s.rank))}</div>`:''}
+          <div style="min-width:0"><h4>${esc(s.name)}</h4>
+            ${s.region?`<div class="svcov">${esc(s.region)}</div>`:''}
+            ${s.price?`<div class="svprice">${esc(s.price)}</div>`:''}
+            <span class="svpill">${st.label}</span>
+            ${log.length?`<div class="svlatest">${esc(log[0].text)}</div>`:''}</div>
+          <span class="chev">▾</span>
+        </div>
+        <div class="svbody">
+          <div class="svlinks">
+            ${link?`<a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open website / form ↗</a>`:''}
+            ${s.email?`<a class="btn ghost sm" href="mailto:${esc(s.email)}" onclick="event.stopPropagation()">Email</a>`:''}
+            <button class="btn ghost sm" onclick="event.stopPropagation();editService('${s.id}')">Edit</button>
+          </div>
+          ${s.phone?`<div class="svkv"><b>Phone</b>${esc(s.phone)}</div>`:''}
+          ${s.line?`<div class="svkv"><b>LINE</b>${esc(s.line)}</div>`:''}
+          ${s.email?`<div class="svkv"><b>Email</b>${esc(s.email)}</div>`:''}
+          ${s.notes?`<div class="svkv"><b>Notes</b>${esc(s.notes).replace(/\n/g,'<br>')}</div>`:''}
+          <div class="svkv"><b>Updates and feedback</b></div>
+          <div class="svadd"><input id="svin-${s.id}" placeholder="Add an update, e.g. replied with a quote" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){addServiceUpdate('${s.id}')}"><button class="btn sm" onclick="event.stopPropagation();addServiceUpdate('${s.id}')">Add</button></div>
+          <div class="svlog">${log.map(l=>`<div><time>${esc(fmtWhen(Date.parse(l.t)||l.t))}${l.by?' · '+esc(l.by):''}</time>${esc(l.text).replace(/\n/g,'<br>')}</div>`).join('')||'<div style="color:var(--ink-35)">Nothing logged yet.</div>'}</div>
+        </div>
+      </div>`; }).join('')}</div></div>`; }).join('');
+}
+function toggleService(id){ openServices.has(id)?openServices.delete(id):openServices.add(id); renderServices(); }
+function addServiceUpdate(id){ const inp=$('#svin-'+id), s=agents[id]; if(!inp||!s) return; const text=inp.value.trim(); if(!text) return; s.log=(s.log||[]).concat([{t:new Date().toISOString(),by:me,text}]); putAgent(s); toast('Update added.'); }
+let editingService=false;
+function openServiceModal(s){
+  editingService=true; editingAgentId=s?s.id:null; $('#agentTitle').textContent=s?'Edit service':'Add service'; $('#btnDeleteAgent').hidden=!s; $('#btnSaveAgent').textContent='Save service';
+  const kOpts=Object.entries(SV_KIND).map(([k,v])=>`<option value="${k}" ${s&&s.kind===k?'selected':''}>${v.one}</option>`).join('');
+  const stOpts=Object.entries(SV_STATUS).map(([k,v])=>`<option value="${k}" ${s&&s.svStatus===k?'selected':''}>${v.label}</option>`).join('');
+  $('#agentForm').innerHTML=`
+    <label class="field"><span>Name</span><input id="sfName" value="${s?esc(s.name):''}"></label>
+    <div class="f2"><label class="field"><span>Type</span><select id="sfKind">${kOpts}</select></label><label class="field"><span>Status</span><select id="sfStatus">${stOpts}</select></label></div>
+    <div class="f2"><label class="field"><span>Our ranking (1 = best)</span><input id="sfRank" type="number" min="1" value="${s&&s.rank?esc(String(s.rank)):''}"></label><label class="field"><span>Price</span><input id="sfPrice" value="${s?esc(s.price||''):''}"></label></div>
+    <label class="field"><span>Covers / based in</span><input id="sfRegion" value="${s?esc(s.region||''):''}"></label>
+    <label class="field"><span>Website or enquiry form link</span><input id="sfUrl" value="${s?esc(s.url||''):''}" placeholder="https://…"></label>
+    <div class="f2"><label class="field"><span>Email</span><input id="sfEmail" value="${s?esc(s.email||''):''}"></label><label class="field"><span>Phone</span><input id="sfPhone" value="${s?esc(s.phone||''):''}"></label></div>
+    <label class="field"><span>LINE</span><input id="sfLine" value="${s?esc(s.line||''):''}"></label>
+    <label class="field"><span>Notes</span><textarea id="sfNotes" style="min-height:90px">${s?esc(s.notes||''):''}</textarea></label>`;
+  $('#modalAgent').classList.add('open');
+}
+function editService(id){ openServiceModal(agents[id]); }
+function saveService(){
+  const name=$('#sfName').value.trim(); if(!name){ toast('Give it a name first.'); return; }
+  const rk=$('#sfRank').value;
+  const data={name,kind:$('#sfKind').value,svStatus:$('#sfStatus').value,rank:rk===''?null:Number(rk),price:$('#sfPrice').value.trim(),region:$('#sfRegion').value.trim(),url:$('#sfUrl').value.trim(),email:$('#sfEmail').value.trim(),phone:$('#sfPhone').value.trim(),line:$('#sfLine').value.trim(),notes:$('#sfNotes').value.trim()};
+  putAgent(editingAgentId?Object.assign(agents[editingAgentId],data):Object.assign({id:uid('sv'),org:'',prefecture:'Other',state:'awaiting',status:'',action:'',log:[]},data));
+  $('#modalAgent').classList.remove('open'); toast(editingAgentId?'Service updated.':'Service added.');
+}
+window.toggleService=toggleService; window.addServiceUpdate=addServiceUpdate; window.editService=editService;
 let openAgents=new Set();
 function toggleAgent(id){ openAgents.has(id)?openAgents.delete(id):openAgents.add(id); renderAgents(); }
 window.toggleAgent=toggleAgent;
@@ -1593,7 +1706,7 @@ let raf=null;
 function scheduleRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; render(); }); }
 function render(){
   const list=visible();
-  renderGrid(list); if($('#mapshell').classList.contains('open')||window.innerWidth>720){ renderMap(list); renderRoutes(); } renderLegend(); renderRouteLegend(); renderRank(); renderAgents(); renderTrip();
+  renderGrid(list); if($('#mapshell').classList.contains('open')||window.innerWidth>720){ renderMap(list); renderRoutes(); } renderLegend(); renderRouteLegend(); renderRank(); renderAgents(); renderServices(); renderTrip();
   $('#cProps').textContent=allProps().length; updFilterCount();
   const d=daysToTrip();
   $('#countdown').innerHTML=d===null?'set trip date':(d>0?`<b>${d}</b> days to trip`:(d===0?'<b>today</b> · trip starts':'trip underway'));
@@ -1616,7 +1729,7 @@ function redrawDrawerSafe(){
 function drawDrawer(){
   const p=props[openPropId]; if(!p) return;
   const st=STATUS[statusOf(p)], ag=agentById(p.agentId), {done,total}=checkStats(p), imgs=photosFor(p.id,'listing'), sc=scoreProp(p);
-  const car=imgs.length?`<div class="carousel${p.stamp?' is-stamped':''}"><img src="${esc(imgs[Math.min(carouselIdx,imgs.length-1)].src)}" alt="">${imgs.length>1?`<button class="nav prev" onclick="slide(-1)">‹</button><button class="nav next" onclick="slide(1)">›</button><span class="idx">${Math.min(carouselIdx,imgs.length-1)+1} / ${imgs.length}</span>`:''}${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`:`<div class="drop" style="cursor:default;position:relative">No listing photos yet — add them with Edit.${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`;
+  const car=imgs.length?`<div class="carousel${p.stamp?' is-stamped':''}"><img src="${esc(srcOf(imgs[Math.min(carouselIdx,imgs.length-1)]))}" alt="">${imgs.length>1?`<button class="nav prev" onclick="slide(-1)">‹</button><button class="nav next" onclick="slide(1)">›</button><span class="idx">${Math.min(carouselIdx,imgs.length-1)+1} / ${imgs.length}</span>`:''}${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`:`<div class="drop" style="cursor:default;position:relative">No listing photos yet — add them with Edit.${estHTML(p)}${p.stamp?`<div class="stamp">${esc(p.stamp)}</div>`:''}</div>`;
   $('#drawer').innerHTML=`
   <div class="dhead" style="--stc:${st.color};--pf:${prefColor(p)}">
     <div><p class="pref" style="--pf:${prefColor(p)}">${esc(prefOf(p))}</p><h2>${esc(p.name)}</h2><p class="caddr">${esc(p.address)}</p></div>
@@ -1787,7 +1900,7 @@ function reportHTML(p){
     <label class="field"><span>Field notes</span><textarea class="rnotes" data-r="notes" placeholder="What you saw, what you'd fix, what stopped you…">${esc(r.notes)}</textarea></label>
     <div class="drop" id="rDrop">Add issue photos — tap to choose, or drop files</div>
     <input type="file" id="rFiles" accept="image/*" multiple hidden>
-    <div class="iphotos">${ip.map(ph=>`<div class="iphoto"><img src="${esc(ph.src)}" alt=""><select data-ptag="${ph.id}">${PHOTO_TAGS.map(t=>`<option ${ph.tag===t?'selected':''}>${t}</option>`).join('')}</select><input data-pcap="${ph.id}" value="${esc(ph.caption||'')}" placeholder="caption"><button class="rm" data-prm="${ph.id}" title="Remove">×</button></div>`).join('')}</div>
+    <div class="iphotos">${ip.map(ph=>`<div class="iphoto"><img src="${esc(srcOf(ph))}" alt=""><select data-ptag="${ph.id}">${PHOTO_TAGS.map(t=>`<option ${ph.tag===t?'selected':''}>${t}</option>`).join('')}</select><input data-pcap="${ph.id}" value="${esc(ph.caption||'')}" placeholder="caption"><button class="rm" data-prm="${ph.id}" title="Remove">×</button></div>`).join('')}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" id="rStamp">Stamp inspection time</button><button class="btn ghost sm" id="rClear">Clear report</button></div>
   </div>`;
 }
@@ -1881,6 +1994,7 @@ window.editProperty=editProperty;
 
 /* ---------------- agent form ---------------- */
 function openAgentModal(a){
+  editingService=false; $('#btnSaveAgent').textContent='Save agent';
   editingAgentId=a?a.id:null; $('#agentTitle').textContent=a?'Edit agent':'Add agent'; $('#btnDeleteAgent').hidden=!a;
   const prefOpts=Object.keys(PREFS).map(k=>`<option ${a&&a.prefecture===k?'selected':''}>${k}</option>`).join('');
   const stOpts=Object.entries(AGENT_STATE).map(([k,v])=>`<option value="${k}" ${a&&a.state===k?'selected':''}>${v.label}</option>`).join('');
@@ -1907,13 +2021,13 @@ function saveAgent(){
 async function mergeData(d,{replaceImages=false}={}){
   let propsIn=[], agsIn=[];
   if(Array.isArray(d)) propsIn=d;
-  else if(d.properties||d.agents){ propsIn=d.properties||[]; agsIn=d.agents||[]; }
+  else if(d.properties||d.agents||d.services){ propsIn=d.properties||[]; agsIn=(d.agents||[]).concat(d.services||[]); }
   else if(d.name&&(d.org||d.region)&&!d.address&&d.price===undefined) agsIn=[d];
   else if(d.name) propsIn=[d];
   else throw new Error('no entry');
   let added=0, updated=0;
   for(const a of agsIn){
-    const ex=agents[a.id]||allAgents().find(x=>x.name.toLowerCase()===String(a.name||'').toLowerCase());
+    const ex=agents[a.id]||allContacts().find(x=>x.name.toLowerCase()===String(a.name||'').toLowerCase());
     if(ex){ await putAgent(Object.assign(ex,a,{id:ex.id})); updated++; }
     else { await putAgent(Object.assign({id:uid('ag'),state:'awaiting',status:'',action:'',email:'',phone:'',notes:'',prefecture:'Other',region:'',org:''},a)); added++; }
   }
@@ -1935,13 +2049,13 @@ async function mergeData(d,{replaceImages=false}={}){
   return {added,updated};
 }
 function exportJSON(){
-  const out={properties:allProps().map(p=>Object.assign({},p,{images:photosFor(p.id,'listing').map(x=>x.src),report:Object.assign({},p.report||blankReport(),{issuePhotos:photosFor(p.id,'issue').map(x=>({src:x.src,tag:x.tag,caption:x.caption}))})})),agents:allAgents(),settings,exportedAt:Date.now()};
+  const out={properties:allProps().map(p=>Object.assign({},p,{images:photosFor(p.id,'listing').map(x=>x.src),report:Object.assign({},p.report||blankReport(),{issuePhotos:photosFor(p.id,'issue').map(x=>({src:x.src,tag:x.tag,caption:x.caption}))})})),agents:allContacts(),settings,exportedAt:Date.now()};
   const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='akiya-board-'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(a.href); toast('Backup downloaded.');
 }
 
 /* ---------------- tabs & wiring ---------------- */
-function showTab(which){ ['props','rank','agents','trip','guide'].forEach(t=>{ $('#tab-'+t).setAttribute('aria-selected',t===which); $('#panel-'+t).hidden=t!==which; }); if(which==='props'&&mapReady) setTimeout(()=>map.invalidateSize(),60); }
-['props','rank','agents','trip','guide'].forEach(t=>$('#tab-'+t).addEventListener('click',()=>showTab(t)));
+function showTab(which){ ['props','rank','agents','services','trip','guide'].forEach(t=>{ $('#tab-'+t).setAttribute('aria-selected',t===which); $('#panel-'+t).hidden=t!==which; }); if(which==='props'&&mapReady) setTimeout(()=>map.invalidateSize(),60); }
+['props','rank','agents','services','trip','guide'].forEach(t=>$('#tab-'+t).addEventListener('click',()=>showTab(t)));
 const menuEl=$('#menu');
 $('#btnMenu').addEventListener('click',()=>menuEl.classList.add('open'));
 menuEl.addEventListener('click',e=>{ if(e.target===menuEl||e.target.tagName==='BUTTON') menuEl.classList.remove('open'); });
@@ -1958,9 +2072,10 @@ function updFilterCount(){
 $('#btnAdd').addEventListener('click',()=>openPropModal(null));
 $('#btnAddAgent').addEventListener('click',()=>openAgentModal(null));
 $('#btnSaveProp').addEventListener('click',saveProp);
-$('#btnSaveAgent').addEventListener('click',saveAgent);
+$('#btnSaveAgent').addEventListener('click',()=>editingService?saveService():saveAgent());
+$('#btnAddService').addEventListener('click',()=>openServiceModal(null));
 $('#btnDelete').addEventListener('click',()=>{ if(!editingId||!confirm('Delete this property for both of you?')) return; delProp(editingId); $('#modal').classList.remove('open'); closeDrawer(); toast('Property deleted.'); });
-$('#btnDeleteAgent').addEventListener('click',()=>{ if(!editingAgentId||!confirm('Delete this agent?')) return; const id=editingAgentId; delAgent(id); allProps().forEach(p=>{ if(p.agentId===id){ p.agentId=''; putProp(p); } }); $('#modalAgent').classList.remove('open'); toast('Agent deleted.'); });
+$('#btnDeleteAgent').addEventListener('click',()=>{ if(!editingAgentId||!confirm(editingService?'Delete this service?':'Delete this agent?')) return; const id=editingAgentId; delAgent(id); allProps().forEach(p=>{ if(p.agentId===id){ p.agentId=''; putProp(p); } }); $('#modalAgent').classList.remove('open'); toast('Agent deleted.'); });
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>$('#modal').classList.remove('open')));
 $$('[data-close-agent]').forEach(b=>b.addEventListener('click',()=>$('#modalAgent').classList.remove('open')));
 $$('[data-close-set]').forEach(b=>b.addEventListener('click',()=>$('#modalSet').classList.remove('open')));
@@ -1998,9 +2113,9 @@ $('#btnSaveSet').addEventListener('click',()=>{
   settings.aud=Number($('#setAud').value)||100; settings.tripStart=$('#setTrip').value||settings.tripStart;
   settings.weights={}; $$('#weights input').forEach(i=>settings.weights[i.dataset.w]=Number(i.value)); putSettings(); $('#modalSet').classList.remove('open'); render(); toast('Settings saved for both of you.');
 });
-$('#btnExport').addEventListener('click',exportJSON);
+$('#btnExport').addEventListener('click',()=>{ if(!photosLoaded){ toast('Photos are still loading — try again in a few seconds.'); return; } exportJSON(); });
 $('#btnImport').addEventListener('click',()=>$('#fileImport').click());
-$('#fileImport').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=async()=>{ try{ const d=JSON.parse(r.result); if(!d.properties&&!d.agents) throw new Error('bad'); if(!confirm('Merge this backup into the shared board?')) return; toast('Importing…'); const res=await mergeData(d,{replaceImages:false}); if(d.settings){ Object.assign(settings,{aud:d.settings.aud||settings.aud}); putSettings(); } toast(res.added+' added, '+res.updated+' updated.'); }catch(err){ toast('That file is not an akiya board export.'); } }; r.readAsText(f); e.target.value=''; });
+$('#fileImport').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=async()=>{ try{ const d=JSON.parse(r.result); if(!d.properties&&!d.agents&&!d.services) throw new Error('bad'); if(!confirm('Merge this backup into the shared board?')) return; toast('Importing…'); const res=await mergeData(d,{replaceImages:false}); if(d.settings){ Object.assign(settings,{aud:d.settings.aud||settings.aud}); putSettings(); } toast(res.added+' added, '+res.updated+' updated.'); }catch(err){ toast('That file is not an akiya board export.'); } }; r.readAsText(f); e.target.value=''; });
 $('#btnPaste').addEventListener('click',()=>{ $('#pasteBox').value=''; $('#modalPaste').classList.add('open'); });
 $('#btnDoPaste').addEventListener('click',async()=>{ let d; try{ d=JSON.parse($('#pasteBox').value); }catch(e){ toast('Not valid JSON — check for a missing bracket.'); return; } try{ const res=await mergeData(d); $('#modalPaste').classList.remove('open'); toast((res.added?res.added+' added':'')+(res.added&&res.updated?', ':'')+(res.updated?res.updated+' updated':'')+'.'); }catch(e){ toast('Could not find a property or agent in that block.'); } });
 
@@ -2043,7 +2158,7 @@ else {
     showWho();
     $('#gate').style.display='none';
     setSync('','syncing');
-    try{
+    (async()=>{ try{
       const sref=doc(fs,'meta','settings'); const snap=await getDoc(sref);
       if(!snap.exists()){
         const seed=seedData(), batch=writeBatch(fs);
@@ -2051,11 +2166,14 @@ else {
         seed.properties.forEach(p=>batch.set(doc(fs,'properties',p.id),clean(p)));
         batch.set(sref,clean(settings)); await batch.commit(); toast('Board created with the starting list.');
       }
-    }catch(e){ toast('Could not reach Firestore: '+e.message); }
+    }catch(e){ toast('Could not reach Firestore: '+e.message); } })();
+    photosLoaded=false; let photosStarted=false;
+    const startPhotos=()=>{ if(photosStarted) return; photosStarted=true;
+      unsubs.push(onSnapshot(collection(fs,'photos'),s=>{ photos={}; s.forEach(d=>photos[d.id]=d.data()); photosLoaded=true; scheduleRender(); })); };
     unsubs.push(onSnapshot(doc(fs,'meta','settings'),s=>{ if(s.exists()) Object.assign(settings,s.data()); scheduleRender(); }));
-    unsubs.push(onSnapshot(collection(fs,'properties'),s=>{ props={}; s.forEach(d=>props[d.id]=d.data()); setSync(s.metadata.fromCache?'off':'on',s.metadata.fromCache?'offline · will sync':'live'); scheduleRender(); }));
+    unsubs.push(onSnapshot(collection(fs,'properties'),s=>{ props={}; s.forEach(d=>props[d.id]=d.data()); setSync(s.metadata.fromCache?'off':'on',s.metadata.fromCache?'offline · will sync':'live'); scheduleRender(); setTimeout(startPhotos,150); }));
     unsubs.push(onSnapshot(collection(fs,'agents'),s=>{ agents={}; s.forEach(d=>agents[d.id]=d.data()); scheduleRender(); }));
-    unsubs.push(onSnapshot(collection(fs,'photos'),s=>{ photos={}; s.forEach(d=>photos[d.id]=d.data()); scheduleRender(); }));
+    setTimeout(startPhotos,4000);
     if(mapReady) setTimeout(()=>map.invalidateSize(),100);
   });
 }
