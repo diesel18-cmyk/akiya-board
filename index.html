@@ -2025,13 +2025,14 @@ async function mergeData(d,{replaceImages=false}={}){
   else if(d.name&&(d.org||d.region)&&!d.address&&d.price===undefined) agsIn=[d];
   else if(d.name) propsIn=[d];
   else throw new Error('no entry');
-  let added=0, updated=0;
+  let added=0, updated=0, removed=0;
   for(const a of agsIn){
     const ex=agents[a.id]||allContacts().find(x=>x.name.toLowerCase()===String(a.name||'').toLowerCase());
     if(ex){ await putAgent(Object.assign(ex,a,{id:ex.id})); updated++; }
     else { await putAgent(Object.assign({id:uid('ag'),state:'awaiting',status:'',action:'',email:'',phone:'',notes:'',prefecture:'Other',region:'',org:''},a)); added++; }
   }
   for(const pIn of propsIn){
+    if(pIn&&pIn.remove===true){ const exr=props[pIn.id]||allProps().find(x=>x.name.toLowerCase()===String(pIn.name||'').toLowerCase()); if(exr){ await delProp(exr.id); removed++; } continue; }
     const p=Object.assign({},pIn);
     const images=p.images||[], issue=(p.report&&p.report.issuePhotos)||[];
     delete p.images; if(p.report) delete p.report.issuePhotos;
@@ -2046,7 +2047,7 @@ async function mergeData(d,{replaceImages=false}={}){
     if(images.length&&(replaceImages||!photosFor(target.id,'listing').length)) for(const src of images) await putPhoto(newPhoto(target.id,'listing',src,'exterior',''));
     for(const ph of issue) await putPhoto(newPhoto(target.id,'issue',ph.src,ph.tag,ph.caption));
   }
-  return {added,updated};
+  return {added,updated,removed};
 }
 function exportJSON(){
   const out={properties:allProps().map(p=>Object.assign({},p,{images:photosFor(p.id,'listing').map(x=>x.src),report:Object.assign({},p.report||blankReport(),{issuePhotos:photosFor(p.id,'issue').map(x=>({src:x.src,tag:x.tag,caption:x.caption}))})})),agents:allContacts(),settings,exportedAt:Date.now()};
@@ -2115,7 +2116,7 @@ $('#btnSaveSet').addEventListener('click',()=>{
 });
 $('#btnExport').addEventListener('click',()=>{ if(!photosLoaded){ toast('Photos are still loading — try again in a few seconds.'); return; } exportJSON(); });
 $('#btnImport').addEventListener('click',()=>$('#fileImport').click());
-$('#fileImport').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=async()=>{ try{ const d=JSON.parse(r.result); if(!d.properties&&!d.agents&&!d.services) throw new Error('bad'); if(!confirm('Merge this backup into the shared board?')) return; toast('Importing…'); const res=await mergeData(d,{replaceImages:false}); if(d.settings){ Object.assign(settings,{aud:d.settings.aud||settings.aud}); putSettings(); } toast(res.added+' added, '+res.updated+' updated.'); }catch(err){ toast('That file is not an akiya board export.'); } }; r.readAsText(f); e.target.value=''; });
+$('#fileImport').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=async()=>{ try{ const d=JSON.parse(r.result); if(!d.properties&&!d.agents&&!d.services) throw new Error('bad'); if(!confirm('Merge this backup into the shared board?')) return; toast('Importing…'); const res=await mergeData(d,{replaceImages:false}); if(d.settings){ Object.assign(settings,{aud:d.settings.aud||settings.aud}); putSettings(); } toast(res.added+' added, '+res.updated+' updated'+(res.removed?', '+res.removed+' removed':'')+'.'); }catch(err){ toast('That file is not an akiya board export.'); } }; r.readAsText(f); e.target.value=''; });
 $('#btnPaste').addEventListener('click',()=>{ $('#pasteBox').value=''; $('#modalPaste').classList.add('open'); });
 $('#btnDoPaste').addEventListener('click',async()=>{ let d; try{ d=JSON.parse($('#pasteBox').value); }catch(e){ toast('Not valid JSON — check for a missing bracket.'); return; } try{ const res=await mergeData(d); $('#modalPaste').classList.remove('open'); toast((res.added?res.added+' added':'')+(res.added&&res.updated?', ':'')+(res.updated?res.updated+' updated':'')+'.'); }catch(e){ toast('Could not find a property or agent in that block.'); } });
 
