@@ -273,6 +273,8 @@ html[data-theme="dark"] .leaflet-control-attribution a{color:var(--indigo)}
 .svgroup>h3 span{font-family:var(--mono);font-size:10.5px;color:var(--ink-35);font-weight:400}
 .svlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:8px}
 .sv{background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--svc,var(--ink-35));border-radius:10px;overflow:hidden}
+.sv.gold{position:relative;border:2px solid #C9A227;border-left:5px solid #C9A227;box-shadow:0 0 0 3px rgba(201,162,39,.18),0 3px 12px rgba(201,162,39,.25)}
+.svgold{display:inline-block;margin:0 0 6px;background:linear-gradient(135deg,#E8C547,#B8860B);color:#1E1606;font-family:var(--mono);font-size:10.5px;font-weight:800;letter-spacing:.08em;line-height:1;padding:5px 10px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.3);text-transform:uppercase}
 .sv .svhead{display:flex;gap:10px;align-items:flex-start;padding:12px 12px 10px;cursor:pointer}
 .sv .svrank{flex:none;width:26px;height:26px;border-radius:50%;background:var(--paper-2);border:1px solid var(--rule);font-family:var(--mono);font-size:12px;font-weight:700;display:grid;place-items:center;color:var(--ink-60)}
 .sv h4{font-family:var(--display);font-size:15.5px;margin:0;line-height:1.25}
@@ -1658,10 +1660,10 @@ function renderServices(){
     if(!list.length) return '';
     return `<div class="svgroup"><h3>${SV_KIND[k].label}<span>${list.length}</span></h3>${SV_KIND[k].hint?`<p class="svintro">${SV_KIND[k].hint}</p>`:''}<div class="svlist">${list.map(s=>{
       const st=SV_STATUS[s.svStatus]||SV_STATUS.todo, log=(s.log||[]).map((l,i)=>({l,i})).sort((a,b)=>((Date.parse(b.l.t)||0)-(Date.parse(a.l.t)||0))||(b.i-a.i)).map(x=>x.l), link=svLink(s.url);
-      return `<div class="sv${openServices.has(s.id)?' open':''}" style="--svc:${st.color}">
+      return `<div class="sv${openServices.has(s.id)?' open':''}${s.gold?' gold':''}" style="--svc:${st.color}">
         <div class="svhead" onclick="toggleService('${s.id}')">
           ${s.rank?`<div class="svrank">${esc(String(s.rank))}</div>`:''}
-          <div style="min-width:0"><h4>${esc(s.name)}</h4>
+          <div style="min-width:0">${s.gold?`<div class="svgold">★ ${esc(typeof s.gold==='string'?s.gold:'Top pick')}</div>`:''}<h4>${esc(s.name)}</h4>
             ${s.region?`<div class="svcov">${esc(s.region)}</div>`:''}
             ${s.price?`<div class="svprice">${esc(s.price)}</div>`:''}
             <span class="svpill">${st.label}</span>
