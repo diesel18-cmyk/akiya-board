@@ -273,6 +273,27 @@ html[data-theme="dark"] .leaflet-control-attribution a{color:var(--indigo)}
 .svgroup>h3 span{font-family:var(--mono);font-size:10.5px;color:var(--ink-35);font-weight:400}
 .svlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-top:8px}
 .sv{background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--svc,var(--ink-35));border-radius:10px;overflow:hidden}
+
+.stprog{padding:10px 0 12px;margin-bottom:6px}
+.stbar{height:10px;border-radius:6px;background:var(--rule);overflow:hidden;margin-bottom:8px}
+.stbar i{display:block;height:100%;background:#2E8B57;border-radius:6px;transition:width .3s}
+.stprog b{font-size:15px;margin-right:10px}.stprog span{font-size:13px;color:var(--ink-60)}
+.stphase{margin:18px 0 6px}
+.stph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 2px 8px}
+.stph h3{margin:0;font-size:17px}.stph span{font-family:var(--mono);font-size:11.5px;color:var(--ink-60);white-space:nowrap}
+.step{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:12px;padding:14px;margin:0 0 9px;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.step:active{transform:scale(.99)}
+.step.next{border:2px solid var(--shu);box-shadow:0 2px 10px rgba(217,79,61,.15)}
+.stbox{flex:0 0 40px;height:40px;border-radius:50%;border:2.5px solid var(--ink-35);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:15px;color:var(--ink-60)}
+.step.next .stbox{border-color:var(--shu);color:var(--shu)}
+.step.done .stbox{background:#2E8B57;border-color:#2E8B57;color:#fff;font-size:22px}
+.sttxt{min-width:0;display:flex;flex-direction:column;gap:4px}
+.sttxt b{font-size:16px;line-height:1.3}
+.sttxt small{font-size:13.5px;line-height:1.45;color:var(--ink-60)}
+.sttxt em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink-35);letter-spacing:.02em}
+.step.done b{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--ink-60)}
+.step.done small{opacity:.6}
+.stintro{font-size:13.5px;color:var(--ink-60);margin:0 2px 4px}
 .sv.gold{position:relative;border:2px solid #C9A227;border-left:5px solid #C9A227;box-shadow:0 0 0 3px rgba(201,162,39,.18),0 3px 12px rgba(201,162,39,.25)}
 .svgold{display:inline-block;margin:0 0 6px;background:linear-gradient(135deg,#E8C547,#B8860B);color:#1E1606;font-family:var(--mono);font-size:10.5px;font-weight:800;letter-spacing:.08em;line-height:1;padding:5px 10px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.3);text-transform:uppercase}
 .sv .svhead{display:flex;gap:10px;align-items:flex-start;padding:12px 12px 10px;cursor:pointer}
@@ -953,6 +974,7 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
   <button role="tab" id="tab-trip" aria-selected="false"><span class="ic">▤</span>Trip</button>
   <button role="tab" id="tab-services" aria-selected="false"><span class="ic">✎</span>Services</button>
   <button role="tab" id="tab-guide" aria-selected="false"><span class="ic">✓</span>Checks</button>
+  <button role="tab" id="tab-steps" aria-selected="false"><span class="ic">☑</span>Steps</button>
 </nav>
 
 <section class="panel" id="panel-props" role="tabpanel">
@@ -1018,6 +1040,12 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
 <section class="panel" id="panel-trip" role="tabpanel" hidden>
   <div class="gridhead"><h2>Day by day</h2><span class="n">Booked viewings appear on their day</span></div>
   <div class="trip" id="trip"></div>
+</section>
+
+<section class="panel" id="panel-steps" role="tabpanel" hidden>
+  <div class="gridhead"><h2>Buying steps</h2><span class="n">Tap to tick · syncs to both phones</span></div>
+  <p class="stintro">Everything from now until you own the house, in order. The red outline is the next thing to do.</p>
+  <div id="steps"></div>
 </section>
 
 <section class="panel" id="panel-guide" role="tabpanel" hidden>
@@ -1712,6 +1740,34 @@ function saveService(){
   putAgent(editingAgentId?Object.assign(agents[editingAgentId],data):Object.assign({id:uid('sv'),org:'',prefecture:'Other',state:'awaiting',status:'',action:'',log:[]},data));
   $('#modalAgent').classList.remove('open'); toast(editingAgentId?'Service updated.':'Service added.');
 }
+const STEPS=[{"phase": "Now — before you fly", "when": "October", "items": [["a-scrivener", "Pick your judicial scrivener (司法書士)", "Waiting on Hatsune and Office Shoji. Choose one who writes in English, has done non-resident buyers before and gives a fixed fee up front. Hoshino (about ¥1M) is out. They check the title, write your affidavit, register the house in your name and file the Bank of Japan report.", "By end of Oct"], ["a-guarantor", "No guarantor needed — nothing to get now", "A cash purchase needs no guarantor, no Japanese bank account and no Japanese contact person. What you WILL need later is a notarised affidavit (step in December) — don't do it now, your scrivener writes the wording once you have a house.", "Just tick it"], ["a-money", "Get the money ready to send in yen", "Check your bank's limits and fees for international transfers, or set up Wise. Keep the house money where you can move it within a day or two (not locked in a term deposit). The deposit is due when you sign and the rest at settlement.", "Before you fly"], ["a-passport", "Passports checked and scanned", "Both passports valid well past the trip. Save a scan of each photo page on your phone — agents and the scrivener will ask for copies.", "Before you fly"], ["a-notary", "Find a notary public in Adelaide", "Only find one and get a price — don't book yet. You'll need them in December to witness the affidavit for both of you. Ask your scrivener whether a JP is accepted instead (Hoshino said either is fine).", "Before you fly"], ["a-machida", "Ask Machida to pencil in 20 or 21 Nov", "He needs 1–2 weeks' notice and your dates are tight. A provisional hold means you could inspect your favourite before flying home. If it doesn't work out, he can inspect later with only the agent there.", "Late Oct"]]}, {"phase": "During the viewings", "when": "10–17 Nov", "items": [["b-view", "Do the viewings and score every house", "Use the Checks tab: Dan does structure, Cas does the rest. Photograph every fault. At each house ask: land category (地目 — must not be farmland), sewer or septic, flood/landslide/tsunami zone, why it's for sale, known defects, and whether the seller would take less.", "Each viewing"], ["b-docs", "Ask for the paperwork on any house you like", "Ask the agent to email PDFs of: the land and building registry (登記事項証明書), the plot map (公図), the building permit (建築確認) and the assessed value (固定資産評価額) — your taxes are worked out from it. Forward them to me to translate and to your scrivener.", "Same day"], ["b-pick", "Pick your top 1–2 houses", "Talk it over on the evening of the 17th using the Ranking tab. Shortlist, don't fall in love — the inspection can still knock one out.", "17 Nov"], ["b-offer", "Put in a written offer (買付証明書)", "A one-page purchase application with your price and conditions. Not binding, but it puts you first in line. Make it subject to a satisfactory building inspection. This is the time to negotiate the price.", "As soon as you pick"], ["b-inspect", "Book Machida for the house", "Matsumoto: ¥88,000 with roof space and underfloor, +¥66,000 seismic check (optional), +¥11,000 travel for Itoigawa. Sakura is the backup. The agent must agree and let him in, water and power must be on, and any drawings should be sent ahead.", "Straight after the offer"], ["b-introduce", "Introduce your scrivener to the agent", "One email to both. The scrivener checks the registry for mortgages, leases or other rights on the land before you sign anything. Nouken already said a non-resident buyer needs their own scrivener.", "Straight after the offer"]]}, {"phase": "Inspection and contract", "when": "Late Nov – early Dec", "items": [["c-inspect", "Inspection done", "Takes 4–5 hours with roof and underfloor. The report comes about 4 days later as a Japanese PDF — send it to me to translate.", "As booked"], ["c-decide", "Go or no-go", "Big structural problems: ask for a lower price or walk away (your offer was conditional). Small things: budget for them and carry on.", "When the report arrives"], ["c-jusetsu", "Get the Important Matters Explanation (重要事項説明)", "The licensed agent must explain this before you sign — by law. It's in Japanese, so ask for the PDF a few days early so I can translate it, or do it by video call. It covers zoning, rebuild limits, road access, hazard zones, sewer, rights on the land and what's included.", "Before signing"], ["c-contract", "Sign the sale contract (売買契約) and pay the deposit", "The deposit (手付金) is usually 5–10% of the price. The contract can usually be signed and sent by courier from Australia. It sets the settlement date and says the house is sold as-is. Small stamp duty applies.", "Early Dec"], ["c-names", "Decide whose names go on the title", "One of you, or both (e.g. 50/50). Decide before the scrivener drafts the papers — changing it later costs money. Ask your Australian accountant how to report a foreign property.", "Before the paperwork"]]}, {"phase": "Paperwork from Australia", "when": "December", "items": [["d-affidavit", "Get the affidavit notarised", "Non-residents have no Japanese address certificate, so a sworn statement of your name, address and date of birth, signed in front of a notary, replaces it. Your scrivener sends the wording. Each person going on the title signs one. It needs to be recent, so do it close to settlement.", "After the contract"], ["d-poa", "Sign the power of attorney (委任状) for the scrivener", "Lets the scrivener register the house without you being in Japan. Sign it at the same notary visit as the affidavit.", "Same visit"], ["d-courier", "Courier the originals to the scrivener", "Tracked international courier (DHL or FedEx). Keep photos of everything you send.", "Same week"]]}, {"phase": "Settlement", "when": "Dec – Jan", "items": [["e-pay", "Send the balance in yen", "Transfer a few working days early so it lands in time. Also budget for: the agent's fee (capped at ¥330,000 incl. tax for houses up to ¥8M), the scrivener's fee and the registration tax.", "A few days before settlement"], ["e-settle", "Settlement day — the house becomes yours", "The scrivener confirms the money arrived and files the ownership transfer (所有権移転登記) the same day. Keys go to the agent to hold or get posted to you.", "Settlement date"], ["e-title", "Receive the title code (登記識別情報) and store it safely", "A 12-character code that proves you own the house — you need it to sell later. Keep the paper somewhere safe and never share the code.", "1–2 weeks after"], ["e-boj", "Bank of Japan report filed", "Non-residents who buy property in Japan report it to the Ministry of Finance through the Bank of Japan within 20 days. Check your scrivener is doing it (some include it in their fee).", "Within 20 days"]]}, {"phase": "After you own it", "when": "First months", "items": [["f-taxagent", "Appoint a tax agent (納税管理人)", "Non-residents must name someone in Japan to receive and pay the property tax bills — a person or a company. Ask the agent or scrivener who they recommend, then tell the city office.", "Straight after settlement"], ["f-acqtax", "Pay the property acquisition tax", "A one-off bill that arrives by post 3–6 months later, based on the assessed value. Usually small for a cheap old house.", "3–6 months later"], ["f-proptax", "Set up the yearly property tax", "Fixed asset tax (about 1.4% of the assessed value, plus a small city planning tax in some areas). Paid in 4 instalments or once a year through your tax agent.", "From next April"], ["f-utilities", "Put water, power and internet in your names", "The agent usually helps. Before leaving it empty in winter, drain the water pipes so they don't freeze and burst.", "First visit"], ["f-insure", "Insure the house", "Fire insurance with the earthquake add-on. Check the insurer accepts a house left empty for long stretches.", "At settlement"], ["f-watch", "Line up someone to keep an eye on it", "A neighbour, the agent's management service or an akiya management company — mail, airing out, snow, checking after storms.", "Before you leave it empty"]]}];
+
+function stepDone(id){ const v=(settings.steps||{})[id]; return !!(v&&v.d); }
+function renderSteps(){
+  const el=$('#steps'); if(!el) return;
+  const all=STEPS.flatMap(ph=>ph.items), done=all.filter(i=>stepDone(i[0])).length;
+  const next=all.find(i=>!stepDone(i[0]));
+  const pct=Math.round(done/all.length*100);
+  let n=0;
+  el.innerHTML=`<div class="stprog"><div class="stbar"><i style="width:${pct}%"></i></div><b>${done} of ${all.length} done</b>${next?`<span>Next up: ${esc(next[1])}</span>`:'<span>All done — enjoy the house.</span>'}</div>`+
+  STEPS.map(ph=>{
+    const pd=ph.items.filter(i=>stepDone(i[0])).length;
+    return `<div class="stphase"><div class="stph"><h3>${esc(ph.phase)}</h3><span>${esc(ph.when)} · ${pd}/${ph.items.length}</span></div>${ph.items.map(i=>{
+      n++; const v=(settings.steps||{})[i[0]]||{}, d=!!v.d, isNext=next&&next[0]===i[0];
+      return `<button class="step${d?' done':''}${isNext?' next':''}" onclick="toggleStep('${i[0]}')" aria-pressed="${d}">
+        <span class="stbox">${d?'✓':n}</span>
+        <span class="sttxt"><b>${esc(i[1])}</b><small>${esc(i[2])}</small>
+        <em>${esc(i[3])}${d&&v.by?` · ticked by ${esc(v.by)}${v.t?' '+esc(new Date(v.t).toLocaleDateString('en-AU',{day:'numeric',month:'short'})):''}`:''}</em></span>
+      </button>`; }).join('')}</div>`; }).join('');
+}
+async function toggleStep(id){
+  const d=!stepDone(id); let by='Dan'; try{ by=localStorage.getItem('akiyaMe')||'Dan'; }catch(e){}
+  const val={d,by,t:new Date().toISOString()};
+  settings.steps=Object.assign({},settings.steps||{},{[id]:val}); renderSteps();
+  if(!fs) return;
+  try{ await setDoc(doc(fs,'meta','settings'),{steps:{[id]:val}},{merge:true}); }catch(e){ toast('Could not save that tick: '+(e.code||e.message)); }
+}
+window.toggleStep=toggleStep;
 window.toggleService=toggleService; window.addServiceUpdate=addServiceUpdate; window.editService=editService;
 let openAgents=new Set();
 function toggleAgent(id){ openAgents.has(id)?openAgents.delete(id):openAgents.add(id); renderAgents(); }
@@ -1739,7 +1795,7 @@ let raf=null;
 function scheduleRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; render(); }); }
 function render(){
   const list=visible();
-  renderGrid(list); if($('#mapshell').classList.contains('open')||window.innerWidth>720){ renderMap(list); renderRoutes(); } renderLegend(); renderRouteLegend(); renderRank(); renderAgents(); renderServices(); renderTrip();
+  renderGrid(list); if($('#mapshell').classList.contains('open')||window.innerWidth>720){ renderMap(list); renderRoutes(); } renderLegend(); renderRouteLegend(); renderRank(); renderAgents(); renderServices(); renderTrip(); renderSteps();
   $('#cProps').textContent=allProps().length; updFilterCount(); updDeadChip();
   const d=daysToTrip();
   $('#countdown').innerHTML=d===null?'set trip date':(d>0?`<b>${d}</b> days to trip`:(d===0?'<b>today</b> · trip starts':'trip underway'));
@@ -2093,8 +2149,8 @@ function exportJSON(){
 }
 
 /* ---------------- tabs & wiring ---------------- */
-function showTab(which){ ['props','rank','agents','services','trip','guide'].forEach(t=>{ $('#tab-'+t).setAttribute('aria-selected',t===which); $('#panel-'+t).hidden=t!==which; }); if(which==='props'&&mapReady) setTimeout(()=>map.invalidateSize(),60); }
-['props','rank','agents','services','trip','guide'].forEach(t=>$('#tab-'+t).addEventListener('click',()=>showTab(t)));
+function showTab(which){ ['props','rank','agents','services','trip','guide','steps'].forEach(t=>{ $('#tab-'+t).setAttribute('aria-selected',t===which); $('#panel-'+t).hidden=t!==which; }); if(which==='props'&&mapReady) setTimeout(()=>map.invalidateSize(),60); }
+['props','rank','agents','services','trip','guide','steps'].forEach(t=>$('#tab-'+t).addEventListener('click',()=>showTab(t)));
 const menuEl=$('#menu');
 $('#btnMenu').addEventListener('click',()=>menuEl.classList.add('open'));
 menuEl.addEventListener('click',e=>{ if(e.target===menuEl||e.target.tagName==='BUTTON') menuEl.classList.remove('open'); });
