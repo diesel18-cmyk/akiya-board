@@ -1287,6 +1287,7 @@ const uid=p=>p+'-'+Math.random().toString(36).slice(2,9);
 const clean=o=>JSON.parse(JSON.stringify(o));
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); }
 function setSync(state,text){ const e=$('#sync'); e.className='sync '+state; e.querySelector('span').textContent=text; }
+function syncErr(where){ return e=>{ const c=(e&&(e.code||e.message))||'unknown'; setSync('off','sync error: '+c); console.error('[akiya] '+where,e); toast(where+' would not sync ('+c+'). '+(c==='resource-exhausted'?'Firebase daily free limit reached - it resets overnight (US time).':c==='permission-denied'?'Firestore rules are blocking this phone.':'Tap the status chip to reload.')); }; }
 
 /* ---------------- writes ---------------- */
 async function putProp(p){ p.updatedBy=me; p.updatedAt=Date.now(); props[p.id]=p; scheduleRender(); try{ await setDoc(doc(fs,'properties',p.id),clean(p)); }catch(e){ toast('Save failed: '+e.message); } }
@@ -1306,7 +1307,7 @@ function startPhotos(){
   if(photosStarted) return photosReady;
   if(!fs||!authed){ photosWanted=true; return photosReady; }
   photosStarted=true;
-  unsubs.push(onSnapshot(collection(fs,'photos'),s=>{ photos={}; s.forEach(d=>photos[d.id]=d.data()); photosLoaded=true; photosReadyResolve(); scheduleRender(); if(openPropId&&$('#drawer').classList.contains('open')) drawDrawer(); syncAllThumbs(); }));
+  unsubs.push(onSnapshot(collection(fs,'photos'),s=>{ photos={}; s.forEach(d=>photos[d.id]=d.data()); photosLoaded=true; photosReadyResolve(); scheduleRender(); if(openPropId&&$('#drawer').classList.contains('open')) drawDrawer(); syncAllThumbs(); },syncErr('Photos')));
   return photosReady;
 }
 /* small copies of the first few listing photos live on the house record itself, so the list loads fast */
@@ -1320,9 +1321,9 @@ async function runThumbs(){
   try{ while(thumbQueue.size){
     const id=thumbQueue.values().next().value; thumbQueue.delete(id); const p=props[id]; if(!p) continue;
     const list=photosFor(id,'listing').slice(0,THUMBS), have=Array.isArray(p.thumbs)?p.thumbs:[];
-    if(Array.isArray(p.thumbs)&&have.length===list.length&&have.every((t,i)=>t.id===list[i].id)) continue;
-    const out=[]; for(const ph of list){ const ex=have.find(t=>t.id===ph.id); if(ex){ out.push(ex); continue; } let small=ph.src; try{ if(String(ph.src).startsWith('data:')) small=await Promise.race([downscale(ph.src,360,0.6),new Promise(r=>setTimeout(()=>r(ph.src),8000))]); }catch(e){} out.push({id:ph.id,src:small}); }
-    p.thumbs=out; props[id]=p; try{ await setDoc(doc(fs,'properties',id),{thumbs:out},{merge:true}); }catch(e){} scheduleRender();
+    if(Array.isArray(p.thumbs)&&have.length<=list.length&&have.every((t,i)=>t.id===list[i].id)&&(have.length===list.length||p.thumbsTried===list.length)) continue;
+    const out=[]; for(const ph of list){ const ex=have.find(t=>t.id===ph.id); if(ex){ out.push(ex); continue; } let small=ph.src; try{ if(String(ph.src).startsWith('data:')) small=await Promise.race([downscale(ph.src,360,0.6),new Promise(r=>setTimeout(()=>r(ph.src),8000))]); }catch(e){} if(String(small).length>150000) continue; out.push({id:ph.id,src:small}); }
+    p.thumbs=out; p.thumbsTried=list.length; props[id]=p; try{ await setDoc(doc(fs,'properties',id),{thumbs:out,thumbsTried:list.length},{merge:true}); }catch(e){ console.error('[akiya] thumbs',id,e); } scheduleRender();
   } } finally{ thumbBusy=false; }
 }
 function srcOf(ph){
@@ -2190,6 +2191,7 @@ else {
   $('#btnOut').addEventListener('click',()=>{ who=who==='Dan'?'Cas':'Dan'; try{ localStorage.setItem(whoKey,who); }catch(e){} showWho(); toast('This phone is now '+who+'.'); });
   const goIn=async()=>{ $('#gErr').textContent=''; try{ await signInAnonymously(auth); }catch(e){ $('#gate').style.display='grid'; $('#gErr').textContent='Could not connect: '+(e.code||e.message).replace('auth/','')+'. If this says admin-restricted-operation, turn on Anonymous sign-in in Firebase.'; } };
   $('#gBtn').addEventListener('click',goIn);
+  $('#sync').style.cursor='pointer'; $('#sync').addEventListener('click',()=>{ const u=new URL(location.href); u.searchParams.set('v',Date.now().toString(36)); location.replace(u.toString()); });
   onAuthStateChanged(auth,async user=>{
     unsubs.forEach(u=>u()); unsubs=[];
     if(!user){ goIn(); return; }
@@ -2206,9 +2208,9 @@ else {
       }
     }catch(e){ toast('Could not reach Firestore: '+e.message); } })();
     resetPhotos(); authed=true;
-    unsubs.push(onSnapshot(doc(fs,'meta','settings'),s=>{ if(s.exists()) Object.assign(settings,s.data()); scheduleRender(); }));
-    unsubs.push(onSnapshot(collection(fs,'properties'),s=>{ props={}; s.forEach(d=>props[d.id]=d.data()); setSync(s.metadata.fromCache?'off':'on',s.metadata.fromCache?'offline · will sync':'live'); scheduleRender(); if(allProps().some(p=>!Array.isArray(p.thumbs))) setTimeout(startPhotos,2500); if(photosWanted) startPhotos(); }));
-    unsubs.push(onSnapshot(collection(fs,'agents'),s=>{ agents={}; s.forEach(d=>agents[d.id]=d.data()); scheduleRender(); }));
+    unsubs.push(onSnapshot(doc(fs,'meta','settings'),s=>{ if(s.exists()) Object.assign(settings,s.data()); scheduleRender(); },syncErr('Settings')));
+    unsubs.push(onSnapshot(collection(fs,'properties'),{includeMetadataChanges:true},s=>{ setSync(s.metadata.fromCache?'off':(s.metadata.hasPendingWrites?'':'on'),s.metadata.fromCache?'offline · will sync':(s.metadata.hasPendingWrites?'saving…':'live')); if(!s.docChanges().length&&Object.keys(props).length) return; props={}; s.forEach(d=>props[d.id]=d.data()); scheduleRender(); if(allProps().some(p=>!Array.isArray(p.thumbs))) setTimeout(startPhotos,2500); if(photosWanted) startPhotos(); },syncErr('Houses')));
+    unsubs.push(onSnapshot(collection(fs,'agents'),s=>{ agents={}; s.forEach(d=>agents[d.id]=d.data()); scheduleRender(); },syncErr('Agents and services')));
     if(mapReady) setTimeout(()=>map.invalidateSize(),100);
   });
 }
