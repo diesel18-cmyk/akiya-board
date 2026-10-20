@@ -1215,26 +1215,26 @@ const RATING = [
     {k:'l_konbini',label:'Convenience store',w:3,d:['15+ min drive','10–15 min drive','5–10 min drive or 15 min walk','5–10 min walk','Under 5 min walk']},
     {k:'l_station',label:'Train station',w:2,d:['30+ min drive','15–30 min drive','Under 15 min drive','10–20 min walk','Under 10 min walk']},
     {k:'l_hardware',label:'Hardware store',w:1,d:['45+ min drive','30–45 min drive','15–30 min drive','Under 15 min drive','Walking distance']}]},
-  {key:'hazard',name:'Natural hazards',w:15,subs:[
+  {key:'value',name:'Value (all-in cost)',w:15,auto:true,subs:[]},
+  {key:'hazard',name:'Natural hazards',w:10,subs:[
     {k:'h_flood',label:'Flood & landslide zone (hazard map)',w:3,fatal:true,d:['Inside a flood or landslide zone — FAIL','Edge of a zone','Low mapped risk','Minimal','Outside all zones, elevated']},
     {k:'h_ground',label:'Ground & earthquake risk',w:2,d:['Fill, liquefaction or steep slope','Soft ground or slope','Average','Firm','Rock or firm, flat']},
     {k:'h_snow',label:'Snow load & winter access',w:1,d:['Heavy snow, hard access','Heavy snow, OK access','Moderate','Light','Minimal']}]},
-  {key:'land',name:'Land & upkeep',w:10,subs:[
+  {key:'land',name:'Land & upkeep',w:5,subs:[
     {k:'d_size',label:'Land size & usable flat area',w:2,d:['Under 150 m²','150–300 m²','300–500 m²','500–800 m²','800 m²+, flat, usable']},
     {k:'d_upkeep',label:'Easy to leave empty for months',w:3,d:['Jungle in one season','High upkeep','Moderate','Low','Minimal grass, good drainage, neighbour can check']},
     {k:'d_garage',label:'Garage / workshop',w:1,d:['None, no room','Room to build','Carport','Garage','Large garage / workshop']}]},
-  {key:'cosmetic',name:'Cosmetic work',w:5,subs:[
-    {k:'c_paint',label:'Paint & walls',w:1,d:['Full strip & repaint','Most rooms','Some rooms','Touch-ups','None needed']},
-    {k:'c_floor',label:'Floors & tatami',w:1,d:['Replace throughout','Most rooms','Some rooms','Minor','None needed']},
-    {k:'c_kitchen',label:'Kitchen & cabinetry',w:1,d:['Full replacement','Major work','Some work','Minor','None needed']},
-    {k:'c_mould',label:'Mould removal',w:1,d:['Heavy, into structure','Widespread','Some rooms','Spots','None']}]},
   {key:'rental',name:'Rentability',w:5,subs:[
     {k:'r_permit',label:'Minpaku / STR permit feasible',w:2,d:['Not permitted','Unlikely','Possible with work','Likely','Clear path or registered']},
     {k:'r_appeal',label:'Guest appeal (views, onsen, ski)',w:2,d:['None','Low','Some','Good','Strong']},
     {k:'r_demand',label:'Rental demand in the area',w:1,d:['None','Low','Some','Good','Strong']}]}
 ];
-const CAT_OWNER = {structure:'Dan',services:'Dan',cosmetic:'Dan',location:'Cas',hazard:'Cas',land:'Cas',rental:'Cas'};
-const CAT_COLORS = {structure:'var(--shu)',services:'var(--indigo)',location:'var(--pf-nagano)',hazard:'var(--pf-gunma)',land:'var(--pf-saitama)',cosmetic:'var(--pf-yamanashi)',rental:'var(--pf-niigata)'};
+const CAT_OWNER = {structure:'Dan',services:'Dan',value:'Both',location:'Cas',hazard:'Cas',land:'Cas',rental:'Cas'};
+const CAT_COLORS = {structure:'var(--shu)',services:'var(--indigo)',location:'var(--pf-nagano)',hazard:'var(--pf-gunma)',land:'var(--pf-saitama)',value:'var(--pf-yamanashi)',rental:'var(--pf-niigata)'};
+/* Value = asking price + Dan's repair estimate (roof, floors, wet areas, cosmetic, septic...). Cosmetic work is costed here, not scored. */
+const VALUE_BANDS=[[4000000,5,'Under ¥4M all in'],[5500000,4,'¥4M–5.5M all in'],[7000000,3,'¥5.5M–7M all in'],[8500000,2,'¥7M–8.5M all in'],[Infinity,1,'Over ¥8.5M all in']];
+const allInCost=p=>p.price==null?null:Number(p.price)+(Number(p.repairMan)||0)*10000;
+function valueScore(p){ const a=allInCost(p); if(a==null||isNaN(a)) return null; for(const [lim,sc] of VALUE_BANDS){ if(a<lim) return sc; } return 1; }
 
 const TRIP_DAYS = [
   ['2026-11-08','Tokyo (Narita)','6 pm land · 10 pm collect rental car · airport/highway hotel'],
@@ -1293,6 +1293,8 @@ function seedData(){
 }
 function blankReport(){ return {verdict:'',triage:{},cond:0,agentPresent:'',timeOn:'',followUp:'',inspectedAt:'',notes:'',readings:{}}; }
 function defaultWeights(){ const w={}; RATING.forEach(c=>w[c.key]=c.w); return w; }
+/* Saved weights from before the Value category (20 Oct) are replaced by the new defaults. */
+function getWeights(){ const sw=settings.weights||{}; return ('value' in sw)?Object.assign(defaultWeights(),sw):defaultWeights(); }
 
 /* ---------------- live state (mirrors of Firestore) ---------------- */
 let props={}, agents={}, photos={}, settings={aud:100,tripStart:'2026-11-09',weights:defaultWeights()};
@@ -1414,16 +1416,17 @@ function tagClass(t){
 
 /* ---------------- scoring ---------------- */
 function scoreProp(p){
-  const r=p.rating||{}, w=Object.assign(defaultWeights(),settings.weights||{});
+  const r=p.rating||{}, w=getWeights();
   let total=0, wsum=0, rated=0, fatal=[], cats={};
   RATING.forEach(c=>{
+    if(c.auto){ const v=valueScore(p); if(v!=null){ cats[c.key]=v; total+=v*(w[c.key]||0); wsum+=(w[c.key]||0); rated++; } return; }
     let cs=0, cw=0;
     c.subs.forEach(s=>{ const v=r[s.k]; if(v){ cs+=v*s.w; cw+=s.w; rated++; if(s.fatal&&v===1) fatal.push(s.label); } });
     if(cw){ const sc=cs/cw; cats[c.key]=sc; total+=sc*(w[c.key]||0); wsum+=(w[c.key]||0); }
   });
   const tri=Object.values((p.report&&p.report.triage)||{}).filter(v=>v==='fail').length;
   if(tri) fatal.push(tri+' triage FAIL'+(tri>1?'s':''));
-  return {score:wsum?total/wsum:null, rated, total:RATING.reduce((n,c)=>n+c.subs.length,0), fatal, cats};
+  return {score:wsum?total/wsum:null, rated, total:RATING.reduce((n,c)=>n+(c.auto?1:c.subs.length),0), fatal, cats};
 }
 const scoreColor=s=>s>=4?'var(--st-confirmed)':s>=3?'#5E9A6E':s>=2?'var(--st-awaiting)':'var(--shu)';
 function scoreHTML(p,size){
@@ -1890,11 +1893,11 @@ const WALK = [
   {id:'w4',name:'Each main room',time:'1 min per room',
     do:['Level on the floor in the centre, both directions. Log the worst room.','Level against one post for plumb, including the main post.','Digital measure floor to ceiling in the centre, then in a corner. Log the biggest difference.','Look up for ceiling stains. Check the power board while passing.'],
     reads:[['r_floor','slope','Floor slope, worst room',''],['r_post','slope','Post out of plumb, worst',''],['r_ceil','ceil','Ceiling centre vs corner, worst','Centre lower than corners = sag']],
-    tri:['f3','r3','m1'],rate:['c_paint','c_floor','c_mould','v_elec']},
+    tri:['f3','r3','m1'],rate:['v_elec']},
   {id:'w5',name:'Wet areas',time:'3 min',
     do:['Moisture at the base of walls, around the toilet base, inside the sink cabinet floor and the bottom of the bathroom door frame.','Level on the floor at the bath doorway and in front of the sink. Stand on it and feel for spring.','Check toilet type, hot water unit and water pressure.'],
     reads:[['w_moist','moist','Wet areas, worst reading',''],['w_floor','slope','Wet area floor slope','']],
-    tri:['m3'],rate:['v_sewer','v_water','v_plumb','c_kitchen']},
+    tri:['m3'],rate:['v_sewer','v_water','v_plumb']},
   {id:'w6',name:'Under the floor',time:'3 min',
     do:['Hatch is usually in the kitchen or wash-room floor.','Moisture meter pins straight into the sill and the bottom of 3 to 4 posts.','Torch and screwdriver on the same spots. Knock for hollow sounds.','Torch across the ground for standing water and check the vents.'],
     reads:[['u_moist','moist','Sill / post base, worst','Wet and soft = walk away']],
@@ -1904,7 +1907,7 @@ const WALK = [
     reads:[['k_moist','moist','Roof timber, worst','']],
     tri:['p3'],rate:[]},
   {id:'w8',name:'Before the car',time:'1 min',
-    do:['Check the numbers above, add the verdict and photos in the site report below.','Ask the agent the build year and whether there is a termite treatment record while they are still there.'],
+    do:['Check the numbers above, add the verdict and photos in the site report below.','Ask the agent the build year and whether there is a termite treatment record while they are still there.','Put a rough repair estimate (roof, floors, wet areas, kitchen, paint, mould, septic) into Value in the Rating section. That sets the all-in cost.'],
     reads:[],tri:[],rate:[]}
 ];
 const walkOpen={};
@@ -1955,17 +1958,27 @@ function wireWalk(){
 }
 /* ---------------- rating section ---------------- */
 function ratingHTML(p,sc){
-  const r=p.rating||{}, w=Object.assign(defaultWeights(),settings.weights||{});
+  const r=p.rating||{}, w=getWeights();
   const head=sc.fatal.length?`<span class="big fail">FAIL <em>${esc(sc.fatal[0])}</em></span>`:(sc.score===null?`<span class="big" style="color:var(--ink-35)">— <em>tap to rate</em></span>`:`<span class="big" style="color:${scoreColor(sc.score)}">${sc.score.toFixed(1)} <em>/ 5 · ${sc.rated} of ${sc.total} rated</em></span>`);
   return `<div class="sec rating" id="ratingSec"><h4>Rating</h4><div class="rhead">${head}</div>
     ${RATING.map(c=>`<div class="rcat" style="border-left-color:${CAT_COLORS[c.key]}"><h5><span>${c.name} <span class="w">${w[c.key]}%</span> <span class="owner">${CAT_OWNER[c.key]}</span></span><span class="cswrap"><span class="catbar"><i style="--cbw:${sc.cats[c.key]?Math.round(sc.cats[c.key]/5*100):0}%;--cbc:${CAT_COLORS[c.key]}"></i></span><span class="cs">${sc.cats[c.key]?sc.cats[c.key].toFixed(1):'—'}</span></span></h5>
-      ${c.subs.map(s=>{ const v=r[s.k]||0; return `<div class="rsub"><div class="lbl"><span>${esc(s.label)}</span><small>×${s.w}${s.fatal?' · 1 = FAIL':''}</small></div>
+      ${c.auto?valueHTML(p):c.subs.map(s=>{ const v=r[s.k]||0; return `<div class="rsub"><div class="lbl"><span>${esc(s.label)}</span><small>×${s.w}${s.fatal?' · 1 = FAIL':''}</small></div>
         <div class="pips">${[1,2,3,4,5].map(n=>`<button data-rate="${s.k}" data-v="${n}" class="${v===n?'on':''}${s.fatal&&n===1?' fatal':''}">${n}</button>`).join('')}</div>
         <div class="desc${v===1&&s.fatal?' fail':''}">${v?esc(s.d[v-1]):'<span style="color:var(--ink-35)">1 = '+esc(s.d[0])+' · 5 = '+esc(s.d[4])+'</span>'}</div></div>`; }).join('')}
     </div>`).join('')}
   </div>`;
 }
+function valueHTML(p){
+  const a=allInCost(p), v=valueScore(p), band=v?VALUE_BANDS.find(b=>b[1]===v):null;
+  return `<div class="rsub"><div class="lbl"><span>Asking price</span><small>from the listing</small></div>
+      <div class="desc">${p.price==null?'<span style="color:var(--ink-35)">No price yet. Add it to the house to score Value.</span>':'¥'+manYen(p.price)+'man'}</div></div>
+    <div class="rsub"><div class="lbl"><span>Repair estimate (万円, man-yen)</span><small>roof, floors, wet areas, cosmetic, septic</small></div>
+      <input id="repairMan" type="number" min="0" step="10" inputmode="numeric" placeholder="e.g. 150 = ¥1.5M" value="${p.repairMan??''}" style="border:1px solid var(--rule);padding:6px 8px;border-radius:2px;font-family:var(--mono);width:160px">
+      <div class="desc">${a==null?'':'All in: <b>¥'+manYen(a)+'man</b> · scores <b>'+v+'</b> ('+esc(band[2])+')'}${p.repairMan==null&&p.price!=null?' · <span style="color:var(--ink-35)">price only until you add a repair estimate</span>':''}</div>
+      <div class="desc" style="color:var(--ink-35)">5 = under ¥4M · 4 = ¥4–5.5M · 3 = ¥5.5–7M · 2 = ¥7–8.5M · 1 = over ¥8.5M</div></div>`;
+}
 function wireRating(){
+  const rm=$('#repairMan'); if(rm) rm.addEventListener('change',()=>{ const p=props[openPropId]; const v=rm.value.trim(); if(v==='') delete p.repairMan; else p.repairMan=Math.max(0,Number(v)||0); putProp(p); });
   $$('#ratingSec [data-rate]').forEach(b=>b.addEventListener('click',()=>{
     const p=props[openPropId]; p.rating=p.rating||{}; const k=b.dataset.rate, v=Number(b.dataset.v);
     p.rating[k]=p.rating[k]===v?0:v; if(!p.rating[k]) delete p.rating[k]; putProp(p);
@@ -2199,8 +2212,8 @@ $('#btnTheme').addEventListener('click',()=>{
 
 $('#btnSettings').addEventListener('click',()=>{
   $('#setAud').value=settings.aud; $('#setTrip').value=settings.tripStart;
-  const w=Object.assign(defaultWeights(),settings.weights||{});
-  $('#weights').innerHTML=RATING.map(c=>`<div class="wr"><span>${c.name} <span class="hint">${c.subs.map(s=>s.label).join(', ')}</span></span><input type="number" min="0" max="100" data-w="${c.key}" value="${w[c.key]}"></div>`).join('');
+  const w=getWeights();
+  $('#weights').innerHTML=RATING.map(c=>`<div class="wr"><span>${c.name} <span class="hint">${c.auto?'Asking price + your repair estimate':c.subs.map(s=>s.label).join(', ')}</span></span><input type="number" min="0" max="100" data-w="${c.key}" value="${w[c.key]}"></div>`).join('');
   const sum=()=>{ const t=$$('#weights input').reduce((n,i)=>n+Number(i.value||0),0); const e=$('#wsum'); e.textContent='Total '+t+'%'; e.classList.toggle('bad',t!==100); };
   $$('#weights input').forEach(i=>i.addEventListener('input',sum)); sum();
   $('#modalSet').classList.add('open');
