@@ -858,6 +858,9 @@ nav.tabs .count{display:none}
 .filters .flabel{min-width:100%;margin-bottom:2px}
 .chip{padding:9px 14px;font-size:14px}
 select.sel{padding:11px 12px;border-radius:8px;font-size:15px;flex:1}
+.filterbar select.sortsel{flex:0 0 auto;width:auto;max-width:52%;min-width:0;font-weight:600;font-size:14px;padding:11px 6px 11px 10px}
+.filterbar .search{min-width:0}
+.filterbar{flex-wrap:nowrap}
 
 /* map: collapsible */
 .maptoggle{
@@ -980,6 +983,19 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
 <section class="panel" id="panel-props" role="tabpanel">
   <div class="filterbar">
     <input class="search" id="fSearch" type="search" placeholder="Search homes…">
+    <select class="sel sortsel" id="fSort" aria-label="Sort homes">
+      <option value="est">Claude's rank</option>
+      <option value="rating">Our score</option>
+      <option value="allIn">All-in cost</option>
+      <option value="value">Best value</option>
+      <option value="priceAsc">Price low-high</option>
+      <option value="priceDesc">Price high-low</option>
+      <option value="viewing">Viewing date</option>
+      <option value="status">Status</option>
+      <option value="pref">Prefecture</option>
+      <option value="name">Name</option>
+      <option value="added">Newest added</option>
+    </select>
     <button class="fbtn filtoggle" id="fToggle">Filter<span class="dotn" id="fCount" hidden>0</span></button>
   </div>
   <div class="filters" id="filters">
@@ -988,17 +1004,6 @@ footer.foot{margin-top:26px;font-size:11px;flex-direction:column;gap:5px}
     <div class="frow"><span class="flabel">Status</span><div class="frow" id="fStatus" style="gap:7px"></div></div>
     <div class="frow"><span class="flabel">Verdict</span><div class="frow" id="fVerdict" style="gap:7px"></div></div>
     <div class="frow">
-      <span class="flabel">Sort by</span>
-      <select class="sel" id="fSort">
-        <option value="rating">Sort: rating</option>
-        <option value="status">Sort: status</option>
-        <option value="viewing">Sort: viewing date</option>
-        <option value="priceAsc">Sort: price ↑</option>
-        <option value="priceDesc">Sort: price ↓</option>
-        <option value="pref">Sort: prefecture</option>
-        <option value="name">Sort: name</option>
-        <option value="added">Sort: recently added</option>
-      </select>
       <button class="chip" id="groupToggle" aria-pressed="true">Group by day</button>
       <button class="chip" id="deadToggle" aria-pressed="true">Hide passed</button>
       <button class="btn ghost sm" id="fClear">Clear</button>
@@ -1305,7 +1310,8 @@ const allAgents=()=>allContacts().filter(a=>!a.kind||a.kind==='agent');
 const allServices=()=>allContacts().filter(a=>a.kind&&a.kind!=='agent');
 const photosFor=(id,kind)=>Object.values(photos).filter(x=>x.propId===id && (!kind||x.kind===kind)).sort((a,b)=>(a.order||0)-(b.order||0));
 
-let filters={prefs:new Set(),tiers:new Set(),statuses:new Set(),verdicts:new Set(),q:'',sort:'rating',groupByDay:true,hideDead:true};
+let filters={prefs:new Set(),tiers:new Set(),statuses:new Set(),verdicts:new Set(),q:'',sort:'est',groupByDay:false,hideDead:true};
+try{ const sv=localStorage.getItem('akiyaSort'); if(sv) filters.sort=sv; filters.groupByDay=(filters.sort==='viewing'); }catch(e){}
 try{ if(localStorage.getItem('akiyaHideDead')==='0') filters.hideDead=false; }catch(e){}
 const isDead=p=>statusOf(p)==='inactive'||!!p.stamp;
 let cardIdx={}, swipedAt=0;
@@ -1461,6 +1467,9 @@ function visible(){
   const s=filters.sort;
   const rk=p=>{ const sc=scoreProp(p); return sc.fatal.length?-1:(sc.score===null?-0.5:sc.score); };
   list.sort((a,b)=>{
+    if(s==='est'){ const ea=hasEst(a)?Number(a.est):-1, eb=hasEst(b)?Number(b.est):-1; return eb-ea||a.name.localeCompare(b.name); }
+    if(s==='allIn'){ const ca=allInCost(a), cb=allInCost(b); return (ca??big)-(cb??big)||a.name.localeCompare(b.name); }
+    if(s==='value'){ const va=valueScore(a)??-1, vb=valueScore(b)??-1; return vb-va||((allInCost(a)??big)-(allInCost(b)??big)); }
     if(s==='rating')    return rk(b)-rk(a)||a.name.localeCompare(b.name);
     if(s==='priceAsc')  return (a.price??big)-(b.price??big);
     if(s==='priceDesc') return (b.price??-1)-(a.price??-1);
@@ -2191,7 +2200,9 @@ $$('[data-close-paste]').forEach(b=>b.addEventListener('click',()=>$('#modalPast
 $('#scrim').addEventListener('click',closeDrawer);
 document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; for(const id of ['modal','modalAgent','modalSet','modalPaste']){ if($('#'+id).classList.contains('open')){ $('#'+id).classList.remove('open'); return; } } closeDrawer(); });
 $('#fSearch').addEventListener('input',e=>{ filters.q=e.target.value; renderGrid(visible()); renderMap(visible()); });
-$('#fSort').addEventListener('change',e=>{ filters.sort=e.target.value; renderGrid(visible()); });
+$('#fSort').value=filters.sort;
+$('#fSort').addEventListener('change',e=>{ filters.sort=e.target.value; filters.groupByDay=(filters.sort==='viewing'); try{ localStorage.setItem('akiyaSort',filters.sort); }catch(err){} const g=$('#groupToggle'); if(g) g.setAttribute('aria-pressed',filters.groupByDay); renderGrid(visible()); });
+(()=>{ const g=$('#groupToggle'); if(g) g.setAttribute('aria-pressed',filters.groupByDay); })();
 function updDeadChip(){ const n=allProps().filter(isDead).length, b=$('#deadToggle'); if(!b) return; b.setAttribute('aria-pressed',filters.hideDead); b.textContent=filters.hideDead?`Hide passed (${n})`:`Showing passed (${n})`; }
 $('#deadToggle').addEventListener('click',()=>{ filters.hideDead=!filters.hideDead; try{ localStorage.setItem('akiyaHideDead',filters.hideDead?'1':'0'); }catch(e){} updDeadChip(); renderGrid(visible()); });
 $('#groupToggle').addEventListener('click',()=>{ filters.groupByDay=!filters.groupByDay; $('#groupToggle').setAttribute('aria-pressed',filters.groupByDay); renderGrid(visible()); });
